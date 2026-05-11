@@ -45,7 +45,27 @@ st.markdown("""
     background: #0A0A0A;
 }
 
-header[data-testid="stHeader"] { background: transparent; }
+/* Hide entire header bar — contains icon buttons that break when Material Icons font is blocked */
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+/* Hide sidebar and any collapsed sidebar control */
+[data-testid="stSidebar"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+section[data-testid="stSidebarCollapsedControl"],
+[class*="collapsedControl"],
+[class*="sidebarCollapsed"] {
+    display: none !important;
+    width: 0 !important;
+    overflow: hidden !important;
+}
+/* Nuke any stray Material Icons text fallback */
+.material-symbols-rounded,
+.material-icons {
+    font-size: 0 !important;
+    visibility: hidden !important;
+}
 
 /* Inputs */
 .stTextInput > div > div > input,
@@ -798,37 +818,28 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Cookies Sidebar ─────────────────────────────────────
-    with st.sidebar:
-        st.markdown("""
-        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:17px;
-                    color:#F0F0F0; margin-bottom:4px;">🍪 Session Cookies</div>
-        <p style="color:#666; font-size:12px; margin-bottom:14px; font-family:'Plus Jakarta Sans',sans-serif;">
-          Required to access Instagram's API.<br>
-          Get from Chrome DevTools → Application → Cookies → instagram.com
-        </p>
-        """, unsafe_allow_html=True)
+    # ── Cookies Section (always visible, no expander/sidebar) ──
+    st.markdown("""
+    <div style="background:#111; border:1px solid #1E1E1E; border-radius:12px;
+                padding:18px 20px 10px; margin-bottom:18px;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:700;
+                  color:#E8405A; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:4px;">
+        Session Cookies
+      </div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; color:#555;
+                  margin-bottom:14px; line-height:1.6;">
+        Chrome DevTools (F12) &rarr; Application &rarr; Cookies &rarr; instagram.com
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    ck1, ck2 = st.columns(2)
+    with ck1:
         sessionid  = st.text_input("sessionid",  value=DEFAULT_COOKIES.get("sessionid",""),  type="password")
-        csrftoken  = st.text_input("csrftoken",  value=DEFAULT_COOKIES.get("csrftoken",""))
         ds_user_id = st.text_input("ds_user_id", value=DEFAULT_COOKIES.get("ds_user_id",""))
+    with ck2:
+        csrftoken  = st.text_input("csrftoken",  value=DEFAULT_COOKIES.get("csrftoken",""))
         mid        = st.text_input("mid",         value=DEFAULT_COOKIES.get("mid",""))
-
-        st.markdown("""
-        <div style="margin-top:14px; padding:12px; background:#141414; border-radius:10px;
-                    font-size:11px; color:#666; line-height:1.7; font-family:'Plus Jakarta Sans',sans-serif;">
-          <b style="color:#E8405A;">How to get cookies:</b><br>
-          1. Open Instagram in Chrome<br>
-          2. Press F12 → Application tab<br>
-          3. Cookies → https://www.instagram.com<br>
-          4. Copy the 4 values above
-        </div>
-        <div style="margin-top:10px; padding:12px; background:#141414; border-radius:10px;
-                    font-size:11px; color:#555; line-height:1.7; font-family:'Plus Jakarta Sans',sans-serif;">
-          <b style="color:#666;">Note:</b> Instagram hides Saves &amp; Shares from all public endpoints.
-          ER% = (Likes + Comments) / Followers × 100.
-        </div>
-        """, unsafe_allow_html=True)
 
     cookies = {
         "sessionid":  sessionid,
@@ -855,7 +866,7 @@ def main():
             st.error("Please enter an Instagram username or URL.")
             return
         if not all([sessionid, csrftoken, ds_user_id, mid]):
-            st.error("⚠️ Fill in all 4 cookies in the sidebar first.")
+            st.error("⚠️ Fill in all 4 cookies in the Session Cookies section above.")
             return
 
         # Clear previous results so we don't flash stale data
