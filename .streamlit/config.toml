@@ -1,5 +1,2 @@
-[ui]
-hideSidebarNav = true
- 
 [client]
-showSidebarNavigation = fals
+showSidebarNavigation = false
