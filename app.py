@@ -372,6 +372,15 @@ DEFAULT_COOKIES = {
     "ds_user_id": "25113411270",
 }
 
+# Override from Streamlit Cloud Secrets if configured
+try:
+    if "sessionid" in st.secrets:  DEFAULT_COOKIES["sessionid"]  = st.secrets["sessionid"]
+    if "csrftoken" in st.secrets:  DEFAULT_COOKIES["csrftoken"]  = st.secrets["csrftoken"]
+    if "mid" in st.secrets:        DEFAULT_COOKIES["mid"]        = st.secrets["mid"]
+    if "ds_user_id" in st.secrets: DEFAULT_COOKIES["ds_user_id"] = st.secrets["ds_user_id"]
+except Exception:
+    pass
+
 IG_APP_ID = "936619743392459"
 
 BASE_HEADERS = {
