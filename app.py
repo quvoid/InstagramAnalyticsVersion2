@@ -85,7 +85,7 @@ section[data-testid="stSidebarCollapsedControl"],
     border-color: #E8405A !important;
     box-shadow: 0 0 0 2px rgba(232,64,90,0.15) !important;
 }
-.stTextInput label, .stNumberInput label, .stTextArea label {
+.stTextInput label, .stNumberInput label, .stTextArea label, .stCheckbox label {
     color: #888 !important;
     font-size: 11px !important;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -449,7 +449,7 @@ def shortcode_to_id(shortcode: str) -> int:
 
 def parse_num(s: str) -> int:
     if not s: return 0
-    s = s.strip().replace(',', '').upper()
+    s = str(s).strip().replace(',', '').upper()
     try:
         if 'M' in s:
             return int(float(s.replace('M', '')) * 1_000_000)
@@ -459,7 +459,7 @@ def parse_num(s: str) -> int:
     except Exception:
         return 0
 
-def human_delay(a=1.0, b=3.0):
+def human_delay(a=0.8, b=2.0):
     time.sleep(random.uniform(a, b))
 
 def make_session(cookies: dict):
@@ -595,6 +595,7 @@ def parse_post(node):
         "comments":    comments,
         "video_views": node.get("video_view_count", 0) or 0,
         "caption":     caption,
+        "comments_list": [],
     }
 
 
@@ -619,10 +620,11 @@ def parse_post_v2(item):
         "comments":    comments,
         "video_views": item.get("view_count", 0) or item.get("play_count", 0) or 0,
         "caption":     caption,
+        "comments_list": [],
     }
 
 
-def run_scrape(username, num_posts, cookies, status_fn=None):
+def run_scrape(username, num_posts, cookies, fetch_comments=False, max_comments=30, status_fn=None):
     session = make_session(cookies)
 
     raw = fetch_profile(username, session, cookies, status_fn)
@@ -698,13 +700,67 @@ def run_scrape(username, num_posts, cookies, status_fn=None):
         return profile, [], None
 
     followers = profile["followers"]
-    for p in posts:
+    for idx, p in enumerate(posts, 1):
         p["er_percent"] = round((p["likes"] + p["comments"]) / followers * 100, 4) if followers else 0
+        if fetch_comments:
+            if status_fn: status_fn(f"Scraping comments for post {idx}/{len(posts)}...")
+            p["comments_list"] = fetch_post_comments(p["url"], session, cookies, max_comments=max_comments)
 
     return profile, posts, None
 
 
 # ── SINGLE / BATCH POST URL SCRAPER FUNCTIONS ────────────────
+
+def fetch_post_comments(url: str, session, cookies, max_comments=50):
+    shortcode = extract_shortcode(url)
+    media_id = shortcode_to_id(shortcode)
+    headers = {**BASE_HEADERS, 'x-csrftoken': cookies.get('csrftoken', '')}
+
+    all_comments = []
+    has_more = True
+    min_id = None
+
+    while len(all_comments) < max_comments and has_more:
+        query_url = f"https://www.instagram.com/api/v1/media/{media_id}/comments/?can_support_threading=true"
+        if min_id:
+            query_url += f"&min_id={min_id}"
+
+        try:
+            r = session.get(query_url, headers=headers, cookies=cookies, timeout=12)
+            if r.status_code == 200:
+                data = r.json()
+                raw_comments = data.get("comments", [])
+                if not raw_comments:
+                    break
+
+                for c in raw_comments:
+                    user_obj = c.get("user", {})
+                    ts = c.get("created_at", 0)
+                    date_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S") if ts else "N/A"
+
+                    all_comments.append({
+                        "post_shortcode": shortcode,
+                        "post_url": f"https://www.instagram.com/p/{shortcode}/",
+                        "comment_id": str(c.get("pk", "")),
+                        "commenter_username": user_obj.get("username", "N/A"),
+                        "commenter_name": user_obj.get("full_name", "N/A"),
+                        "text": c.get("text", ""),
+                        "date": date_str,
+                        "likes": c.get("comment_like_count", 0) or 0,
+                    })
+
+                has_more = data.get("has_more_comments", False)
+                min_id = data.get("next_min_id")
+                if not min_id:
+                    break
+                human_delay(0.4, 1.2)
+            else:
+                break
+        except Exception:
+            break
+
+    return all_comments[:max_comments]
+
 
 def fetch_post_details(url: str, session, cookies, profile_cache=None):
     if profile_cache is None:
@@ -728,16 +784,16 @@ def fetch_post_details(url: str, session, cookies, profile_cache=None):
         "comments": 0,
         "video_views": 0,
         "followers": 0,
-        "er_percent": 0.0
+        "er_percent": 0.0,
+        "comments_list": []
     }
 
-    # Step 1: HTML Page GET & Meta Tag Extraction (Gets FULL 100% Description with linebreaks & hashtags)
+    # Step 1: HTML Page GET & Meta Tag Extraction
     try:
         r_page = session.get(clean_url, headers=headers, cookies=cookies, timeout=12)
         if r_page.status_code == 200:
             page_text = r_page.text
             
-            # og:title -> Name & Username
             og_t = re.search(r'<meta\s+(?:name|property)="og:title"\s+content="([^"]+)"\s*/?>', page_text, re.IGNORECASE) or \
                    re.search(r'content="([^"]+)"\s+(?:name|property)="og:title"', page_text, re.IGNORECASE)
             if og_t:
@@ -751,7 +807,6 @@ def fetch_post_details(url: str, session, cookies, profile_cache=None):
                 elif "• Instagram" in val:
                     post_data["full_name"] = val.split("•")[0].strip()
 
-            # Full multi-line caption from meta description
             meta_m = re.search(r'<meta\s+(?:name|property)="og:description"\s+content="(.*?)"\s*/?>', page_text, re.DOTALL | re.IGNORECASE) or \
                      re.search(r'<meta\s+(?:name|property)="description"\s+content="(.*?)"\s*/?>', page_text, re.DOTALL | re.IGNORECASE) or \
                      re.search(r'content="(.*?)"\s+(?:name|property)="(?:og:)?description"', page_text, re.DOTALL | re.IGNORECASE)
@@ -781,7 +836,7 @@ def fetch_post_details(url: str, session, cookies, profile_cache=None):
     except Exception:
         pass
 
-    # Step 2: Mobile Media Info API (Backup for likes/comments/caption if missing)
+    # Step 2: Mobile Media Info API Backup
     if not post_data["caption"] or post_data["username"] == "N/A":
         mobile_headers = {
             'User-Agent': 'Instagram 269.0.0.18.75 Android (26/8.0.0; 480dpi; 1080x1920; OnePlus; ONEPLUS A3003; OnePlus3; qcom; en_US; 314665256)',
@@ -841,7 +896,6 @@ def fetch_post_details(url: str, session, cookies, profile_cache=None):
         except Exception:
             pass
 
-    # Populate Title (First non-empty line of caption)
     if post_data["caption"]:
         lines = [l.strip() for l in post_data["caption"].splitlines() if l.strip()]
         if lines:
@@ -849,11 +903,9 @@ def fetch_post_details(url: str, session, cookies, profile_cache=None):
     if post_data["title"] == "N/A":
         post_data["title"] = f"Instagram Post ({shortcode})"
 
-    # Check if URL is reel/video
     if "/reel/" in url or "/reels/" in url:
         post_data["type"] = "Video"
 
-    # Fetch follower count for account if username is known
     uname = post_data["username"]
     if uname != "N/A":
         if uname in profile_cache:
@@ -874,7 +926,7 @@ def fetch_post_details(url: str, session, cookies, profile_cache=None):
     return post_data
 
 
-def run_batch_scrape(urls: list[str], cookies: dict, status_fn=None, progress_fn=None):
+def run_batch_scrape(urls: list[str], cookies: dict, fetch_comments=True, max_comments=50, status_fn=None, progress_fn=None):
     session = make_session(cookies)
     results = []
     profile_cache = {}
@@ -882,18 +934,27 @@ def run_batch_scrape(urls: list[str], cookies: dict, status_fn=None, progress_fn
     total = len(urls)
     for i, url in enumerate(urls, 1):
         if status_fn:
-            status_fn(f"Fetching post {i} of {total} ({url})...")
+            status_fn(f"Fetching post {i} of {total} details...")
         if progress_fn:
-            progress_fn(int((i / total) * 80))
+            progress_fn(int(((i - 0.5) / total) * 80))
 
         p_data = fetch_post_details(url, session, cookies, profile_cache)
+
+        if fetch_comments:
+            if status_fn:
+                status_fn(f"Scraping comments for post {i} of {total} (@{p_data.get('username','N/A')})...")
+            cmts = fetch_post_comments(url, session, cookies, max_comments=max_comments)
+            p_data["comments_list"] = cmts
+
         results.append(p_data)
-        human_delay(0.8, 2.0)
+        if progress_fn:
+            progress_fn(int((i / total) * 80))
+        human_delay(0.8, 1.8)
 
     return results
 
 
-# ── EXCEL BUILDERS (CLEAN WHITE THEME) ─────────────────────────
+# ── EXCEL BUILDERS (CLEAN WHITE THEME + COMMENTS SHEET) ────────
 
 def build_excel(profile, posts) -> bytes:
     wb   = openpyxl.Workbook()
@@ -1072,6 +1133,63 @@ def build_excel(profile, posts) -> bytes:
                 c.font = nf(10, "000000"); c.alignment = ctr(False)
         ws3.row_dimensions[row].height = 28
 
+    # ── Sheet 4: Extracted Comments ────────────────────────
+    all_cmts = []
+    for p in posts:
+        for c in p.get("comments_list", []):
+            all_cmts.append((p, c))
+
+    if all_cmts:
+        ws4 = wb.create_sheet("All Comments")
+        ws4.sheet_view.showGridLines = True
+        ws4.column_dimensions["A"].width = 5
+        ws4.column_dimensions["B"].width = 16
+        ws4.column_dimensions["C"].width = 30
+        ws4.column_dimensions["D"].width = 40
+        ws4.column_dimensions["E"].width = 18
+        ws4.column_dimensions["F"].width = 20
+        ws4.column_dimensions["G"].width = 60
+        ws4.column_dimensions["H"].width = 18
+        ws4.column_dimensions["I"].width = 10
+
+        ws4.merge_cells("A1:I1")
+        ws4["A1"] = f"Extracted Comments — @{profile['username']} ({len(all_cmts)} Comments)"
+        ws4["A1"].font = Font(name="Calibri", bold=True, size=14, color="000000")
+        ws4["A1"].alignment = ctr(False); ws4.row_dimensions[1].height = 30
+
+        headers4 = ["#", "Post Account", "Post Title", "Post URL", "Commenter Username", "Commenter Name", "Comment Text", "Comment Date", "Comment Likes"]
+        for col, h in enumerate(headers4, 1):
+            c = ws4.cell(row=2, column=col, value=h)
+            c.font = bf(10, "000000"); c.fill = fill("F2F2F2")
+            c.alignment = ctr(False); c.border = thick_bottom
+        ws4.row_dimensions[2].height = 24
+
+        for i, (p, c) in enumerate(all_cmts, 1):
+            row = i + 2
+            vals = [
+                i,
+                f"@{p.get('username', 'N/A')}",
+                p.get("title", "N/A"),
+                p.get("url", ""),
+                f"@{c.get('commenter_username', 'N/A')}",
+                c.get("commenter_name", "N/A"),
+                c.get("text", ""),
+                c.get("date", "N/A"),
+                c.get("likes", 0)
+            ]
+            for col, val in enumerate(vals, 1):
+                cell = ws4.cell(row=row, column=col, value=val)
+                cell.border = bdr
+                if col in (3, 7):
+                    cell.alignment = lft(wrap=True); cell.font = nf(10, "000000")
+                elif col == 4:
+                    cell.alignment = lft(wrap=False); cell.font = link_font(10); cell.hyperlink = val
+                elif col == 9:
+                    cell.number_format = "#,##0"; cell.font = nf(10, "000000"); cell.alignment = rgt(False)
+                else:
+                    cell.font = nf(10, "000000"); cell.alignment = ctr(False) if col in (1, 8) else lft(wrap=True)
+            ws4.row_dimensions[row].height = 24
+
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -1157,11 +1275,11 @@ def build_batch_excel(posts) -> bytes:
             c = ws.cell(row=row, column=col)
             c.border = bdr
 
-            if col in (4, 5): # Title & Description
+            if col in (4, 5):
                 c.value = val; c.font = nf(10, "000000"); c.alignment = lft(wrap=True)
-            elif col == 8: # Post URL
+            elif col == 8:
                 c.value = val; c.font = link_font(10); c.alignment = lft(wrap=False); c.hyperlink = val
-            elif col == 15: # ER%
+            elif col == 15:
                 if isinstance(followers, int) and followers > 0:
                     c.value = f"=(I{row}+J{row})/L{row}*100"
                     c.number_format = '0.00"%"'; c.font = bf(10, "000000")
@@ -1169,13 +1287,13 @@ def build_batch_excel(posts) -> bytes:
                     c.value = f"{p.get('er_percent', 0.0):.2f}%" if p.get('er_percent') else "—"
                     c.font = bf(10, "000000")
                 c.alignment = ctr(False)
-            elif col in (9, 10, 11, 12) and isinstance(val, int): # Numbers
+            elif col in (9, 10, 11, 12) and isinstance(val, int):
                 c.value = val; c.number_format = "#,##0"; c.font = nf(10, "000000"); c.alignment = rgt(False)
-            elif col == 7: # Type
+            elif col == 7:
                 c.value = val; c.font = bf(10, "000000"); c.alignment = ctr(False)
-            elif col in (13, 14): # Saves/Shares
+            elif col in (13, 14):
                 c.value = val; c.font = nf(9, "777777"); c.alignment = ctr(False)
-            elif col in (2, 3): # Account & Name
+            elif col in (2, 3):
                 c.value = val; c.font = nf(10, "000000"); c.alignment = lft(wrap=True)
             else:
                 c.value = val; c.font = nf(10, "000000"); c.alignment = ctr(False)
@@ -1298,6 +1416,63 @@ def build_batch_excel(posts) -> bytes:
         vc.alignment = lft(False); vc.border = bdr
         ws3.row_dimensions[row].height = 20
 
+    # ── Sheet 4: Extracted Comments ────────────────────────
+    all_cmts = []
+    for p in posts:
+        for c in p.get("comments_list", []):
+            all_cmts.append((p, c))
+
+    if all_cmts:
+        ws4 = wb.create_sheet("All Comments")
+        ws4.sheet_view.showGridLines = True
+        ws4.column_dimensions["A"].width = 5
+        ws4.column_dimensions["B"].width = 16
+        ws4.column_dimensions["C"].width = 30
+        ws4.column_dimensions["D"].width = 40
+        ws4.column_dimensions["E"].width = 18
+        ws4.column_dimensions["F"].width = 20
+        ws4.column_dimensions["G"].width = 60
+        ws4.column_dimensions["H"].width = 18
+        ws4.column_dimensions["I"].width = 10
+
+        ws4.merge_cells("A1:I1")
+        ws4["A1"] = f"Extracted Comments — Batch Analysis ({len(all_cmts)} Comments)"
+        ws4["A1"].font = Font(name="Calibri", bold=True, size=14, color="000000")
+        ws4["A1"].alignment = ctr(False); ws4.row_dimensions[1].height = 30
+
+        headers4 = ["#", "Post Account", "Post Title", "Post URL", "Commenter Username", "Commenter Name", "Comment Text", "Comment Date", "Comment Likes"]
+        for col, h in enumerate(headers4, 1):
+            c = ws4.cell(row=2, column=col, value=h)
+            c.font = bf(10, "000000"); c.fill = fill("F2F2F2")
+            c.alignment = ctr(False); c.border = thick_bottom
+        ws4.row_dimensions[2].height = 24
+
+        for i, (p, c) in enumerate(all_cmts, 1):
+            row = i + 2
+            vals = [
+                i,
+                f"@{p.get('username', 'N/A')}",
+                p.get("title", "N/A"),
+                p.get("url", ""),
+                f"@{c.get('commenter_username', 'N/A')}",
+                c.get("commenter_name", "N/A"),
+                c.get("text", ""),
+                c.get("date", "N/A"),
+                c.get("likes", 0)
+            ]
+            for col, val in enumerate(vals, 1):
+                cell = ws4.cell(row=row, column=col, value=val)
+                cell.border = bdr
+                if col in (3, 7):
+                    cell.alignment = lft(wrap=True); cell.font = nf(10, "000000")
+                elif col == 4:
+                    cell.alignment = lft(wrap=False); cell.font = link_font(10); cell.hyperlink = val
+                elif col == 9:
+                    cell.number_format = "#,##0"; cell.font = nf(10, "000000"); cell.alignment = rgt(False)
+                else:
+                    cell.font = nf(10, "000000"); cell.alignment = ctr(False) if col in (1, 8) else lft(wrap=True)
+            ws4.row_dimensions[row].height = 24
+
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -1341,7 +1516,7 @@ def main():
         Instagram <span style="color:#E8405A;">Metrics</span>
       </h1>
       <p style="color:#555; font-size:13px; margin-top:10px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:400;">
-        Dump Post URLs or Scrape User Profiles &rarr; Download Title, Full Description & Metrics in Excel
+        Dump Post URLs or Scrape User Profiles &rarr; Download Title, Full Description, Comments & Metrics in Excel
       </p>
     </div>
     """, unsafe_allow_html=True)
@@ -1393,7 +1568,13 @@ def main():
             height=140
         )
 
-        go_batch = st.button("▶  Fetch Metrics for Dumped URLs", use_container_width=True)
+        col_opt1, col_opt2 = st.columns([2, 1])
+        with col_opt1:
+            do_fetch_comments = st.checkbox("Fetch Post Comments", value=True)
+        with col_opt2:
+            max_cmts = st.number_input("Max Comments / Post", min_value=5, max_value=500, value=50, step=10)
+
+        go_batch = st.button("▶  Fetch Metrics & Comments for Dumped URLs", use_container_width=True)
 
         if go_batch:
             if not raw_urls.strip():
@@ -1408,7 +1589,6 @@ def main():
                 st.error("No valid Instagram URLs or shortcodes detected. Check your pasted text.")
                 return
 
-            # Clear state
             st.session_state.result_profile = None
             st.session_state.result_posts   = None
             st.session_state.batch_posts    = None
@@ -1423,13 +1603,19 @@ def main():
             def update_progress(val):
                 progress.progress(val)
 
-            update_status(f"Found {len(urls)} URLs. Extracting Title, Full Description & Metrics...")
+            update_status(f"Found {len(urls)} URLs. Extracting Title, Full Description & Comments...")
             progress.progress(10)
 
-            batch_posts = run_batch_scrape(urls, cookies, status_fn=update_status, progress_fn=update_progress)
+            batch_posts = run_batch_scrape(
+                urls, cookies,
+                fetch_comments=do_fetch_comments,
+                max_comments=int(max_cmts),
+                status_fn=update_status,
+                progress_fn=update_progress
+            )
 
             progress.progress(85)
-            update_status("Building Excel Report with Titles, Descriptions & Metrics...")
+            update_status("Building Excel Report with Titles, Descriptions & Comments...")
 
             excel_bytes = build_batch_excel(batch_posts)
             fname = f"ig_batch_metrics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
@@ -1449,22 +1635,21 @@ def main():
             total_l = sum(p.get("likes", 0) for p in b_posts)
             total_c = sum(p.get("comments", 0) for p in b_posts)
             total_v = sum(p.get("video_views", 0) for p in b_posts)
+            total_cmts_scraped = sum(len(p.get("comments_list", [])) for p in b_posts)
             valid_er = [p["er_percent"] for p in b_posts if p.get("er_percent", 0) > 0]
             avg_er = sum(valid_er) / len(valid_er) if valid_er else 0
 
-            # Success Banner
             st.markdown(f"""
             <div style="background:#0d1f16; border:1px solid #1a4d30; border-radius:12px;
                         padding:18px 22px; margin:14px 0;">
               <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; font-weight:800;
                           color:#1DB954; letter-spacing:-0.01em;">✅ Done — Processed {n} Post URLs</div>
               <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; color:#3d7a55; margin-top:3px;">
-                Extracted Title, Full Description, Likes, Comments, Views & ER% into Excel format
+                Extracted Title, Description, {total_cmts_scraped} Comments, Likes, Views & ER% into Excel
               </div>
             </div>
             """, unsafe_allow_html=True)
 
-            # Metric grid
             st.markdown(f"""
             <div class="metric-grid">
               <div class="metric-card metric-followers">
@@ -1484,8 +1669,8 @@ def main():
                 <div class="metric-label">Avg Likes / Post</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">{fmt_num(total_v)}</div>
-                <div class="metric-label">Video Views</div>
+                <div class="metric-value">{fmt_num(total_cmts_scraped)}</div>
+                <div class="metric-label">Comments Extracted</div>
               </div>
               <div class="metric-card metric-er">
                 <div class="metric-value">{avg_er:.2f}%</div>
@@ -1535,14 +1720,20 @@ def main():
                 unsafe_allow_html=True
             )
 
-            # Expandable Titles & Full Descriptions View
-            st.markdown('<div class="section-label">Titles & Full Descriptions</div>', unsafe_allow_html=True)
+            # Expandable Titles, Full Descriptions & Scraped Comments View
+            st.markdown('<div class="section-label">Titles, Full Descriptions & Comments</div>', unsafe_allow_html=True)
             for i, p in enumerate(b_posts):
-                with st.expander(f"#{i+1} | @{p.get('username','N/A')} — {p.get('title','Post Title')[:60]}"):
+                with st.expander(f"#{i+1} | @{p.get('username','N/A')} — {p.get('title','Post Title')[:60]} ({len(p.get('comments_list',[]))} comments)"):
                     st.markdown(f"**Account:** @{p.get('username','N/A')} ({p.get('full_name','N/A')})  |  **Date:** {p.get('date','N/A')}  |  **Type:** {p.get('type','Image')}")
                     st.markdown(f"**Title:** {p.get('title','N/A')}")
                     st.markdown(f"**Full Description / Caption:**\n```text\n{p.get('caption','No description available.')}\n```")
                     st.markdown(f"[Open Post on Instagram ↗]({p['url']})")
+
+                    cmts_list = p.get("comments_list", [])
+                    if cmts_list:
+                        st.markdown(f"**💬 Top Scraped Comments ({len(cmts_list)}):**")
+                        for idx, c in enumerate(cmts_list[:15], 1):
+                            st.markdown(f"**{idx}. @{c['commenter_username']}** ({c['likes']} likes · {c['date']}): {c['text']}")
 
             # Download Excel
             st.markdown('<div class="section-label">Export Excel</div>', unsafe_allow_html=True)
@@ -1556,7 +1747,7 @@ def main():
             st.markdown("""
             <div style="text-align:center; font-family:'Plus Jakarta Sans',sans-serif;
                         font-size:11px; color:#383838; margin-top:6px;">
-              Includes 3 sheets: Post Metrics (with Full Description) · Captions & Descriptions · Batch Analytics
+              Includes 4 sheets: Post Metrics · Captions & Descriptions · Batch Analytics · All Comments
             </div>
             """, unsafe_allow_html=True)
 
@@ -1570,6 +1761,12 @@ def main():
             )
         with col2:
             num_posts = st.number_input("Posts", min_value=1, max_value=50, value=15, step=5)
+
+        col_opt1, col_opt2 = st.columns([2, 1])
+        with col_opt1:
+            prof_fetch_cmts = st.checkbox("Fetch Post Comments", value=False)
+        with col_opt2:
+            prof_max_cmts = st.number_input("Max Comments / Post", min_value=5, max_value=500, value=30, step=10, key="prof_max_cmts")
 
         go_profile = st.button("▶  Fetch Profile Metrics", use_container_width=True)
 
@@ -1598,6 +1795,8 @@ def main():
 
             profile, posts, err = run_scrape(
                 username, int(num_posts), cookies,
+                fetch_comments=prof_fetch_cmts,
+                max_comments=int(prof_max_cmts),
                 status_fn=update_status
             )
 
@@ -1736,7 +1935,7 @@ def main():
             st.markdown("""
             <div style="text-align:center; font-family:'Plus Jakarta Sans',sans-serif;
                         font-size:11px; color:#383838; margin-top:6px;">
-              Includes 3 sheets: Post Metrics · Profile Summary · Captions
+              Includes sheets: Post Metrics · Profile Summary · Captions · All Comments
             </div>
             """, unsafe_allow_html=True)
 
