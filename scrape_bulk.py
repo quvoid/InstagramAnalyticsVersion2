@@ -15,13 +15,12 @@ Install deps:
 #  ✏️  STEP 1: ADD YOUR POSTS HERE
 #  Format: ("Name / Campaign Label", "Instagram Post or Reel URL")
 # ════════════════════════════════════════════════════════════════
-
 POSTS = [
-    # ("Name Placeholder",           "URL Placeholder"),
-    ("Rajiv Makhni",               "https://www.instagram.com/reels/Dazdx9LRzIZ/"),
-    ("Nandu Patil - Tech Marathi", "https://www.instagram.com/p/Da1n-orIKMG/"),
-    # Add more rows below ↓
-    # ("Another Creator",          "https://www.instagram.com/p/XXXXXXXX/"),
+    ("Pilot Laxmi",          "https://www.instagram.com/reel/DYrmpEfIGkF/"),
+    ("Dr. Anupriya",         "https://www.instagram.com/reel/DYqzA9QM2UJ/"),
+    ("Trinetra",             "https://www.instagram.com/reel/DYwzuJPNWRw/"),
+    ("Saumya Sahni",         "https://www.instagram.com/reel/DYjOwhzt4tM/"),
+    ("Yaashvi Shah",         "https://www.instagram.com/reel/DaVgOKgKs6k/"),
 ]
 
 # ════════════════════════════════════════════════════════════════
@@ -41,7 +40,7 @@ COOKIES = {
 # ════════════════════════════════════════════════════════════════
 
 FETCH_COMMENTS   = True   # Set False to skip comment scraping
-MAX_COMMENTS     = 50     # Max comments to fetch per post
+MAX_COMMENTS     = 500     # Max comments to fetch per post
 OUTPUT_FILENAME  = "ig_bulk_metrics.xlsx"   # Output Excel filename
 
 # ════════════════════════════════════════════════════════════════
@@ -271,22 +270,34 @@ def fetch_post(label: str, url: str, session, profile_cache: dict) -> dict:
 
 # ── Comments Fetcher ──────────────────────────────────────────
 
-def fetch_comments(url: str, session, max_count=50) -> list:
+def fetch_comments(url: str, session, max_count=500) -> list:
+    import urllib.parse
     sc  = extract_shortcode(url)
     mid = shortcode_to_id(sc)
     hdrs = {**BASE_HEADERS, "x-csrftoken": COOKIES.get("csrftoken","")}
     out = []
-    has_more = True
+    seen_ids = set()
     min_id = None
+    empty_pages = 0
 
-    while len(out) < max_count and has_more:
+    while len(out) < max_count:
         q = f"https://www.instagram.com/api/v1/media/{mid}/comments/?can_support_threading=true"
-        if min_id: q += f"&min_id={min_id}"
+        if min_id:
+            q += f"&min_id={urllib.parse.quote(str(min_id))}"
         try:
             r = session.get(q, headers=hdrs, cookies=COOKIES, timeout=12)
             if r.status_code == 200:
                 data = r.json()
-                for c in data.get("comments", []):
+                new_in_page = 0
+                comments_list = data.get("comments", [])
+                
+                for c in comments_list:
+                    cid = c.get("pk") or c.get("id")
+                    if cid is not None and cid in seen_ids:
+                        continue
+                    if cid is not None:
+                        seen_ids.add(cid)
+                    new_in_page += 1
                     u  = c.get("user", {})
                     ts = c.get("created_at", 0)
                     dt = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S") if ts else "N/A"
@@ -297,10 +308,23 @@ def fetch_comments(url: str, session, max_count=50) -> list:
                         "date":               dt,
                         "likes":              c.get("comment_like_count",0) or 0,
                     })
-                has_more = data.get("has_more_comments", False)
-                min_id   = data.get("next_min_id")
-                if not min_id: break
+
+                next_min   = data.get("next_min_id")
+
+                if new_in_page == 0:
+                    empty_pages += 1
+                else:
+                    empty_pages = 0
+                if empty_pages >= 2:
+                    break
+
+                if not has_more or not next_min or next_min == min_id:
+                    break
+                min_id = next_min
                 delay(0.3, 1.0)
+            elif r.status_code == 429:
+                print("  ⏳ Rate limited on comments — waiting 20s...")
+                time.sleep(20)
             else:
                 break
         except Exception:

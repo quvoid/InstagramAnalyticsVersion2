@@ -712,18 +712,18 @@ def run_scrape(username, num_posts, cookies, fetch_comments=False, max_comments=
 # ── SINGLE / BATCH POST URL SCRAPER FUNCTIONS ────────────────
 
 def fetch_post_comments(url: str, session, cookies, max_comments=50):
+    import urllib.parse
     shortcode = extract_shortcode(url)
     media_id = shortcode_to_id(shortcode)
     headers = {**BASE_HEADERS, 'x-csrftoken': cookies.get('csrftoken', '')}
 
     all_comments = []
-    has_more = True
     min_id = None
 
-    while len(all_comments) < max_comments and has_more:
+    while len(all_comments) < max_comments:
         query_url = f"https://www.instagram.com/api/v1/media/{media_id}/comments/?can_support_threading=true"
         if min_id:
-            query_url += f"&min_id={min_id}"
+            query_url += f"&min_id={urllib.parse.quote(str(min_id))}"
 
         try:
             r = session.get(query_url, headers=headers, cookies=cookies, timeout=12)
@@ -749,7 +749,6 @@ def fetch_post_comments(url: str, session, cookies, max_comments=50):
                         "likes": c.get("comment_like_count", 0) or 0,
                     })
 
-                has_more = data.get("has_more_comments", False)
                 min_id = data.get("next_min_id")
                 if not min_id:
                     break
