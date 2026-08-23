@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn>=0.29
+curl_cffi>=0.7
+python-dotenv>=1.0
+
+# Optional. Only needed if you set AD_TRANSPORT=browser (or pass
+# ?transport=browser) as a fallback when a session cookie goes stale. The
+# default cookie transport does not use it.
+#   pip install playwright && python -m playwright install chromium
+# playwright>=1.40

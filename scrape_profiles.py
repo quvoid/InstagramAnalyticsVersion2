@@ -14,12 +14,33 @@ Install dependencies:
 # ════════════════════════════════════════════════════════════════
 #  ✏️  STEP 1: ADD INSTAGRAM USERNAMES HERE
 # ════════════════════════════════════════════════════════════════
-
+# jockeywomanindia — 31 unique partners (47 partnership posts, excluding the 134 posts co-authored with jockeyindia itself)
+# jockeyindia — 19 unique partners (41 partnership posts, excluding the 134 posts co-authored with jockeywomanindia itself)
 USERNAMES = [
-    "therajivmakhni",
-    "nandupatilofficial",
-    # Add more usernames here (e.g. "MohitVerma", "AkshayJadhav")
+    "devilscircuit",
+    "tarun_kinra",
+    "prernamasseyy",
+    "chiragkhannaa",
+    "ayeshakanga",
+    "rutviitiwari",
+    "harsh_zii",
+    "kaizervaghela",
+    "thatbohogirl",
+    "gayatri23__",
+    "varunsood12",
+    "rajatrm_",
+    "nitibhakaul",
+    "avinash_world",
+    "satviksankhyan",
+    "nitanshigoelofficial",
+    "akshbaghla",
+    "tanvi_malhara",
+    "yashaswinidayama",
 ]
+# 36 unique accounts, from mamaearth.in's last 400 posts
+
+# 114 unique accounts, from officialzivame's last 600 posts
+
 
 # ════════════════════════════════════════════════════════════════
 #  ✏️  STEP 2: PASTE YOUR INSTAGRAM COOKIES HERE
@@ -27,10 +48,11 @@ USERNAMES = [
 # ════════════════════════════════════════════════════════════════
 
 COOKIES = {
-    "sessionid":  "25113411270%3AyQFaao428g6Xb9%3A0%3AAYgcV3Qe5uiiJD1FyRkSD2vULzcMkEegPbBVeDmWYQ",
+    "sessionid":  "25113411270%3AyQFaao428g6Xb9%3A0%3AAYjwS_M5UIDcS-i41tvdVFu8WKSqfzfgEhlZLGMvFg",
     "csrftoken":  "3gJbkGDZp99lA8QQ0brobyoHzOreuu8f",
     "mid":        "afyCbwALAAFRStE-k17-dfO5_jfa",
     "ds_user_id": "25113411270",
+
 }
 
 # ════════════════════════════════════════════════════════════════
@@ -413,14 +435,35 @@ def main():
         print("❌ No profile data scraped successfully.")
         return
 
+    # Cache the raw scrape to JSON BEFORE touching Excel — if the xlsx write
+    # below fails (locked file, disk full, whatever), the scraped data is
+    # still safe on disk and doesn't need to be re-scraped from scratch.
+    cache_path = OUTPUT_FILENAME.rsplit(".", 1)[0] + "_cache.json"
+    try:
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(profiles_data, f, ensure_ascii=False)
+        print(f"💾 Cached raw scrape data to {cache_path} (safe even if the Excel write below fails)")
+    except Exception as e:
+        print(f"⚠ Could not write cache file ({e}) — continuing anyway.")
+
     print("📊 Generating Excel spreadsheet...")
     excel_bytes = build_excel_report(profiles_data)
 
-    with open(OUTPUT_FILENAME, "wb") as f:
-        f.write(excel_bytes)
+    save_path = OUTPUT_FILENAME
+    try:
+        with open(save_path, "wb") as f:
+            f.write(excel_bytes)
+    except PermissionError:
+        # Usually means the file is open in Excel right now. Don't lose the
+        # scrape over it — fall back to a timestamped filename instead.
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_path = f"{OUTPUT_FILENAME.rsplit('.', 1)[0]}_{stamp}.xlsx"
+        print(f"⚠ '{OUTPUT_FILENAME}' is locked (probably open in Excel) — saving to '{save_path}' instead.")
+        with open(save_path, "wb") as f:
+            f.write(excel_bytes)
 
     print(f"\n{'═'*65}")
-    print(f"  ✅ Complete! Saved: {OUTPUT_FILENAME}")
+    print(f"  ✅ Complete! Saved: {save_path}")
     print(f"  Profiles analyzed: {len(profiles_data)}")
     print("  Sheets: Profiles Overview · Detailed Post Metrics · Captions & Descriptions")
     print(f"{'═'*65}\n")

@@ -2,3 +2,14 @@ __pycache__/
 *.pyc
 .env
 .venv/
+PARTNERSHIP_INTEGRATION.md
+fb_api/.doc_id_cache.json
+fb_api/fb_cookie*.txt
+fb_api/fb_cookie*.json
+*.log
+video/
+video_croma/
+scratch_*.json
+batch*.json
+chunk_*.json
+half*.json

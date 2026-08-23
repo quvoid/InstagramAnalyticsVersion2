@@ -29,10 +29,11 @@ POSTS = [
 # ════════════════════════════════════════════════════════════════
 
 COOKIES = {
-    "sessionid":  "25113411270%3AyQFaao428g6Xb9%3A0%3AAYgcV3Qe5uiiJD1FyRkSD2vULzcMkEegPbBVeDmWYQ",
+    "sessionid":  "25113411270%3AyQFaao428g6Xb9%3A0%3AAYjwS_M5UIDcS-i41tvdVFu8WKSqfzfgEhlZLGMvFg",
     "csrftoken":  "3gJbkGDZp99lA8QQ0brobyoHzOreuu8f",
     "mid":        "afyCbwALAAFRStE-k17-dfO5_jfa",
     "ds_user_id": "25113411270",
+
 }
 
 # ════════════════════════════════════════════════════════════════
@@ -309,7 +310,7 @@ def fetch_comments(url: str, session, max_count=500) -> list:
                         "likes":              c.get("comment_like_count",0) or 0,
                     })
 
-                next_min   = data.get("next_min_id")
+                next_min = data.get("next_min_id")
 
                 if new_in_page == 0:
                     empty_pages += 1
@@ -318,7 +319,11 @@ def fetch_comments(url: str, session, max_count=500) -> list:
                 if empty_pages >= 2:
                     break
 
-                if not has_more or not next_min or next_min == min_id:
+                # NOTE: Instagram's has_more_comments flag is unreliable on
+                # this endpoint — it reports False even when min_id continuation
+                # still returns fresh comments (verified empirically). Rely on
+                # next_min_id presence/change instead, not has_more_comments.
+                if not next_min or next_min == min_id:
                     break
                 min_id = next_min
                 delay(0.3, 1.0)
