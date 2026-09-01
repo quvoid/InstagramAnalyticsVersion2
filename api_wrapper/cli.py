@@ -1,9 +1,9 @@
 """
 CLI tool for the Unified Competitor Intelligence API Wrapper.
 Usage:
-    python -m api_wrapper.cli audit --brand palmonas_official --page-id 100076111693972
+    python -m api_wrapper.cli audit --brand palmonas_official --range 3m
+    python -m api_wrapper.cli insta --brand giva.co --range 1w
     python -m api_wrapper.cli adlib --query Palmonas
-    python -m api_wrapper.cli insta --brand giva.co
     python -m api_wrapper.cli fb --page zivame
 """
 
@@ -18,7 +18,7 @@ def main():
     audit_p = subparsers.add_parser("audit", help="Run 360-degree competitor audit")
     audit_p.add_argument("--brand", required=True, help="Instagram brand handle")
     audit_p.add_argument("--page-id", default=None, help="Meta Ad Library Page ID")
-    audit_p.add_argument("--days", type=int, default=365, help="Days to scan back")
+    audit_p.add_argument("--range", default="1y", help="Date range: '1w', '1m', '3m', '6m', '1y', '2y'")
     audit_p.add_argument("--no-excel", action="store_true", help="Disable Excel export")
 
     # Ad Library command
@@ -30,7 +30,7 @@ def main():
     # Instagram command
     insta_p = subparsers.add_parser("insta", help="Scan Instagram Partnerships")
     insta_p.add_argument("--brand", required=True, help="Instagram brand handle")
-    insta_p.add_argument("--days", type=int, default=365, help="Days to scan back")
+    insta_p.add_argument("--range", default="1y", help="Date range: '1w', '1m', '3m', '6m', '1y', '2y'")
 
     # Facebook command
     fb_p = subparsers.add_parser("fb", help="Scan Facebook Page info")
@@ -43,10 +43,10 @@ def main():
         res = client.audit_brand(
             target_brand=args.brand,
             fb_page_id=args.page_id,
-            days_back=args.days,
+            time_window=args.range,
             export_excel=not args.no_excel
         )
-        print(f"\nAudit complete! Found {res['total_unique_creators']} unique creators.")
+        print(f"\nAudit complete! Found {res['total_unique_creators']} unique creators across {res['time_window']} window.")
         if res.get("excel_file"):
             print(f"Master Excel Deliverable: {res['excel_file']}")
 
@@ -57,19 +57,14 @@ def main():
             active_only=args.active_only
         )
         print(f"\nCaptured {res['total_ads_captured']} ads and {res['unique_creators_count']} creator partners.")
-        with open(f"{args.query}_adlibrary_export.json", "w", encoding="utf-8") as f:
-            json.dump(res, f, indent=2)
-        print(f"Exported to {args.query}_adlibrary_export.json")
 
     elif args.command == "insta":
         res = client.instagram.get_partnerships(
             target_brand=args.brand,
-            days_back=args.days
+            time_window=args.range
         )
-        print(f"\nFound {res['total_collab_posts']} collab posts across {res['unique_creators_count']} unique creators.")
-        with open(f"{args.brand}_instagram_collabs.json", "w", encoding="utf-8") as f:
-            json.dump(res, f, indent=2)
-        print(f"Exported to {args.brand}_instagram_collabs.json")
+        print(f"\nFound {res['total_collab_posts']} collab posts across {res['unique_creators_count']} creators ({res['time_window_requested']} window).")
+        print(f"Cohorts: {res['date_range_cohorts']}")
 
     elif args.command == "fb":
         res = client.facebook.get_page_info(page_handle=args.page)

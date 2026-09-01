@@ -1,19 +1,20 @@
 """
 Unified FastAPI REST Server for Instagram, Facebook, and Meta Ad Library Intelligence.
+Supports Named Date Ranges: '1w', '1m', '3m', '6m', '1y', '2y'.
 Run:
     uvicorn api_wrapper.server:app --reload --port 8080
 """
 
 import os, sys
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Query, HTTPException, Header, BackgroundTasks
+from fastapi import FastAPI, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from .client import CompetitorIntelligenceClient
 
 app = FastAPI(
     title="Unified Competitor & Paid Media Intelligence API",
     description="Enterprise REST API for Instagram Creator Collabs, Facebook Pages, and Meta Ad Library Dark Ads.",
-    version="2.0.0"
+    version="2.1.0"
 )
 
 app.add_middleware(
@@ -30,13 +31,14 @@ def root():
     return {
         "status": "online",
         "service": "Unified Competitor Intelligence API",
+        "supported_date_ranges": ["7d / 1w", "30d / 1m", "90d / 3m", "180d / 6m", "365d / 1y", "730d / 2y"],
         "endpoints": {
             "docs": "/docs",
             "instagram_profile": "/api/v1/instagram/profile/{username}",
-            "instagram_partnerships": "/api/v1/instagram/partnerships/{brand_username}",
+            "instagram_partnerships": "/api/v1/instagram/partnerships/{brand_username}?range=1y",
             "facebook_page": "/api/v1/facebook/page/{page_handle}",
             "meta_ad_library": "/api/v1/meta/ads?query={brand}",
-            "full_audit": "/api/v1/intelligence/audit/{brand_username}"
+            "full_audit": "/api/v1/intelligence/audit/{brand_username}?range=1y"
         }
     }
 
@@ -44,19 +46,19 @@ def root():
 @app.get("/api/v1/instagram/profile/{username}")
 def get_instagram_profile(username: str):
     try:
-        return client.instagram.get_profile_metrics(username)
+        return client.instagram.get_profile(username)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# 2. Instagram 1-Year Partnerships & Boost Hierarchy
+# 2. Instagram Partnerships with Flexible Date Range
 @app.get("/api/v1/instagram/partnerships/{brand_username}")
 def get_instagram_partnerships(
     brand_username: str,
-    days_back: int = Query(default=365, ge=1, le=730),
-    max_pages: int = Query(default=25, ge=1, le=50)
+    range: str = Query(default="1y", description="Date range preset: '1w', '1m', '3m', '6m', '1y', '2y' or integer days"),
+    max_pages: int = Query(default=30, ge=1, le=50)
 ):
     try:
-        return client.instagram.get_partnerships(brand_username, days_back=days_back, max_pages=max_pages)
+        return client.instagram.get_partnerships(brand_username, time_window=range, max_pages=max_pages)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -81,19 +83,19 @@ def search_meta_ads(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# 5. Full-Funnel Unified Competitor Audit
+# 5. Full-Funnel 360° Competitor Audit with Date Range Presets
 @app.get("/api/v1/intelligence/audit/{brand_username}")
 def audit_competitor_brand(
     brand_username: str,
-    page_id: Optional[str] = Query(default=None),
-    days_back: int = Query(default=365, ge=1, le=730),
+    page_id: Optional[str] = Query(default=None, description="Optional Meta Ad Library Page ID"),
+    range: str = Query(default="1y", description="Date range: '1w' (1 week), '1m' (1 month), '3m' (3 months), '6m' (6 months), '1y' (1 year), '2y' (2 years)"),
     export_excel: bool = Query(default=True)
 ):
     try:
         return client.audit_brand(
             target_brand=brand_username,
             fb_page_id=page_id,
-            days_back=days_back,
+            time_window=range,
             export_excel=export_excel
         )
     except Exception as e:

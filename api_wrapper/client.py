@@ -1,12 +1,12 @@
 """
 Unified Competitor Intelligence & Creator Audit Engine
-Sequential Multi-Stage Pipeline:
-1. Scrape Instagram 1-Year Grid & Reels (Co-Authors & Collabs)
-2. Enrich Instagram Creator Profiles (Follower Counts, ER%, Audience Tiers)
-3. Scrape Meta Ad Library (GraphQL + Playwright) for Dark Ads & Whitelists
-4. Enrich Meta Ad Library Creator Profiles (Resolve handles, followers & tiers)
-5. Fuse & Deduplicate into a Unified Master Creator Roster
-6. Export Master Multi-Tab Excel Workbook & Clean CSV
+With Named Date Range Support:
+  - '7d' / '1w'  (Last 1 Week)
+  - '30d' / '1m' (Last 1 Month)
+  - '90d' / '3m' (Last 3 Months)
+  - '180d' / '6m' (Last 6 Months)
+  - '365d' / '1y' (Last 1 Year)
+  - '730d' / '2y' (Last 2 Years)
 """
 
 import sys, os, json, time, re, csv
@@ -21,7 +21,6 @@ from playwright.sync_api import sync_playwright
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-# Session Configuration
 DEFAULT_IG_COOKIES = {
     "sessionid": "76326162386%3A670U47iQkU6B8V%3A18%3AAYj9oJ1L51k_G3_j-uX4lQ9V6aM9Wc7gQ2yZ",
     "ds_user_id": "76326162386",
@@ -32,6 +31,49 @@ DEFAULT_IG_HEADERS = {
     "User-Agent": "Instagram 269.0.0.18.75 Android (26/8.0.0; 480dpi; 1080x1920; OnePlus; ONEPLUS A3003; OnePlus3; qcom; en_US; 314665256)",
     "x-ig-app-id": "936619743392459",
 }
+
+
+# ==============================================================================
+# DATE RANGE RESOLVER HELPER
+# ==============================================================================
+def parse_date_range(time_window: Union[int, str, None]) -> int:
+    """
+    Parses flexible date range strings or integers into exact number of days.
+    Examples:
+      '7d', '1w', '1week'   -> 7 days
+      '30d', '1m', '1month' -> 30 days
+      '90d', '3m', '3months'-> 90 days
+      '180d', '6m', '6months'-> 180 days
+      '365d', '1y', '1year' -> 365 days
+      '730d', '2y', '2years'-> 730 days
+      180                   -> 180 days
+    """
+    if time_window is None: return 365
+    if isinstance(time_window, int): return max(1, time_window)
+    
+    s = str(time_window).lower().strip().replace(" ", "").replace("_", "").replace("-", "")
+    
+    # Direct mappings
+    mappings = {
+        "7d": 7, "1w": 7, "1week": 7, "week": 7, "lastweek": 7,
+        "14d": 14, "2w": 14, "2weeks": 14,
+        "30d": 30, "1m": 30, "1month": 30, "month": 30, "lastmonth": 30,
+        "60d": 60, "2m": 60, "2months": 60,
+        "90d": 90, "3m": 90, "3months": 90, "quarter": 90, "last3months": 90, "lastquarter": 90,
+        "180d": 180, "6m": 180, "6months": 180, "halfyear": 180, "last6months": 180,
+        "365d": 365, "1y": 365, "1year": 365, "year": 365, "lastyear": 365, "last1year": 365,
+        "730d": 730, "2y": 730, "2years": 730, "last2years": 730
+    }
+    if s in mappings:
+        return mappings[s]
+        
+    if s.endswith("d") and s[:-1].isdigit(): return int(s[:-1])
+    if s.endswith("w") and s[:-1].isdigit(): return int(s[:-1]) * 7
+    if s.endswith("m") and s[:-1].isdigit(): return int(s[:-1]) * 30
+    if s.endswith("y") and s[:-1].isdigit(): return int(s[:-1]) * 365
+    if s.isdigit(): return int(s)
+    
+    return 365
 
 
 # ==============================================================================
@@ -79,7 +121,7 @@ def resolve_creator_profile(raw_handle: str) -> Dict[str, Any]:
 # 2. INSTAGRAM SERVICE
 # ==============================================================================
 class InstagramService:
-    """Extracts 1-Year Grid, Reels, Co-Authors, and Profile Metrics."""
+    """Extracts Grid, Reels, Co-Authors, and Boost Ranks across any Date Range."""
 
     def __init__(self, cookies: Optional[Dict[str, str]] = None, headers: Optional[Dict[str, str]] = None):
         self.cookies = cookies or DEFAULT_IG_COOKIES
@@ -99,7 +141,12 @@ class InstagramService:
     def get_profile(self, username: str) -> Dict[str, Any]:
         return resolve_creator_profile(username)
 
-    def get_partnerships(self, target_brand: str, days_back: int = 365, max_pages: int = 25) -> Dict[str, Any]:
+    def get_partnerships(self, target_brand: str, time_window: Union[int, str] = "1y", max_pages: int = 30) -> Dict[str, Any]:
+        """
+        Extract all co-authored reels, lookbooks, and creator collabs across:
+        '7d' / '1w', '30d' / '1m', '90d' / '3m', '180d' / '6m', '365d' / '1y', '730d' / '2y'.
+        """
+        days_back = parse_date_range(time_window)
         clean_u = target_brand.lower().replace("@", "").strip()
         user_pk = self.resolve_pk(clean_u)
         session = self._get_session()
@@ -146,9 +193,16 @@ class InstagramService:
                 except Exception:
                     break
 
-        # Process Collaborations
+        # Process Collaborations & Cohorts
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+        ts_7d = now_ts - (7 * 86400)
+        ts_30d = now_ts - (30 * 86400)
+        ts_90d = now_ts - (90 * 86400)
+        ts_180d = now_ts - (180 * 86400)
+
         collabs = []
         creators_dict = {}
+        cohort_counts = {"last_7d": 0, "last_30d": 0, "last_90d": 0, "last_180d": 0, "total_in_window": 0}
 
         for it in all_media:
             taken_at = it.get("taken_at", 0)
@@ -174,6 +228,12 @@ class InstagramService:
                         break
 
             if is_collab and creator_uname:
+                cohort_counts["total_in_window"] += 1
+                if taken_at >= ts_7d: cohort_counts["last_7d"] += 1
+                if taken_at >= ts_30d: cohort_counts["last_30d"] += 1
+                if taken_at >= ts_90d: cohort_counts["last_90d"] += 1
+                if taken_at >= ts_180d: cohort_counts["last_180d"] += 1
+
                 likes = it.get("like_count") or 0
                 comments = it.get("comment_count") or 0
                 views = it.get("play_count") or it.get("view_count") or int(likes * 18.5)
@@ -188,11 +248,12 @@ class InstagramService:
                 code = it.get("code", "")
                 date_str = datetime.fromtimestamp(taken_at, tz=timezone.utc).strftime("%Y-%m-%d")
 
-                collabs.append({
+                collab_obj = {
                     "post_url": f"https://www.instagram.com/p/{code}/" if code else "",
                     "creator_handle": f"@{creator_uname}",
                     "raw_handle": creator_uname,
                     "date": date_str,
+                    "timestamp": taken_at,
                     "views": views,
                     "likes": likes,
                     "comments": comments,
@@ -200,7 +261,8 @@ class InstagramService:
                     "is_paid_toggle": is_paid,
                     "is_boosted": is_boosted,
                     "partnership_tier": tier
-                })
+                }
+                collabs.append(collab_obj)
 
                 if creator_uname not in creators_dict:
                     creators_dict[creator_uname] = {
@@ -218,6 +280,9 @@ class InstagramService:
 
         return {
             "brand": clean_u,
+            "time_window_requested": str(time_window),
+            "days_audited": days_back,
+            "date_range_cohorts": cohort_counts,
             "total_media_scanned": len(all_media),
             "total_collab_posts": len(collabs),
             "unique_creators_count": len(creators_dict),
@@ -401,12 +466,7 @@ class MetaAdLibraryService:
 class CompetitorIntelligenceClient:
     """
     Unified Orchestrator:
-    Step 1: Scrape Instagram Grid
-    Step 2: Enrich Instagram Creator Metrics (Followers, Sizing Tiers)
-    Step 3: Scrape Meta Ad Library (Dark Ads)
-    Step 4: Enrich Meta Creator Metrics
-    Step 5: Fuse & Deduplicate into Master Creator Roster
-    Step 6: Build Multi-Tab Master Excel Deliverable
+    Supports flexible Date Ranges: '1w', '1m', '3m', '6m', '1y', '2y'
     """
 
     def __init__(self, ig_cookies: Optional[Dict[str, str]] = None):
@@ -414,21 +474,22 @@ class CompetitorIntelligenceClient:
         self.facebook = FacebookService()
         self.ad_library = MetaAdLibraryService()
 
-    def audit_brand(self, target_brand: str, fb_page_id: Optional[str] = None, days_back: int = 365, export_excel: bool = True, output_filename: Optional[str] = None) -> Dict[str, Any]:
+    def audit_brand(self, target_brand: str, fb_page_id: Optional[str] = None, time_window: Union[int, str] = "1y", export_excel: bool = True, output_filename: Optional[str] = None) -> Dict[str, Any]:
+        days_back = parse_date_range(time_window)
         clean_b = target_brand.lower().replace("@", "").strip()
         print("\n" + "="*80)
-        print(f"🚀 EXECUTING 360° COMPETITOR INTELLIGENCE AUDIT FOR: @{clean_b.upper()}")
+        print(f"🚀 EXECUTING 360° COMPETITOR AUDIT FOR: @{clean_b.upper()} [Window: {time_window} ({days_back} Days)]")
         print("="*80 + "\n")
 
         # ----------------------------------------------------------------------
-        # STEP 1: Scrape Instagram Brand Grid & Reels (1 Year)
+        # STEP 1: Scrape Instagram Brand Grid & Reels
         # ----------------------------------------------------------------------
-        print(f"📌 [STEP 1/5] Scraping Instagram 1-Year Grid & Reels for @{clean_b}...")
-        ig_data = self.instagram.get_partnerships(clean_b, days_back=days_back)
+        print(f"📌 [STEP 1/5] Scraping Instagram Grid & Reels for @{clean_b} ({days_back} Days)...")
+        ig_data = self.instagram.get_partnerships(clean_b, time_window=days_back)
         print(f"   ✓ Captured {ig_data['total_collab_posts']} Collab Posts across {ig_data['unique_creators_count']} Creators\n")
 
         # ----------------------------------------------------------------------
-        # STEP 2: Enrich Instagram Creator Profiles (Followers & Sizing Tiers)
+        # STEP 2: Enrich Instagram Creator Profiles
         # ----------------------------------------------------------------------
         print(f"📌 [STEP 2/5] Enriching Profile Metrics for {len(ig_data['creators'])} Instagram Creators...")
         ig_profiles_map = {}
@@ -441,14 +502,14 @@ class CompetitorIntelligenceClient:
         print(f"   ✓ Successfully resolved follower counts & tiers for all {len(ig_profiles_map)} creators\n")
 
         # ----------------------------------------------------------------------
-        # STEP 3: Scrape Meta Ad Library (Active & Inactive Dark Ads)
+        # STEP 3: Scrape Meta Ad Library
         # ----------------------------------------------------------------------
         print(f"📌 [STEP 3/5] Scraping Meta Ad Library for '{clean_b}' (Page ID: {fb_page_id})...")
         ad_data = self.ad_library.search_ads(query=clean_b, page_id=fb_page_id, max_scrolls=30)
         print(f"   ✓ Captured {ad_data['total_ads_captured']} Ads | {ad_data['unique_creators_count']} Whitelisted Partners\n")
 
         # ----------------------------------------------------------------------
-        # STEP 4: Enrich Meta Ad Library Creators (Discover & Resolve Dark Ads)
+        # STEP 4: Enrich Meta Ad Library Creators
         # ----------------------------------------------------------------------
         print(f"📌 [STEP 4/5] Enriching Metrics for Meta Ad Library Creator Partners...")
         meta_profiles_map = {}
@@ -530,10 +591,10 @@ class CompetitorIntelligenceClient:
             reverse=True
         )
 
-        out_file = output_filename or f"{clean_b}_complete_creator_audit.xlsx"
+        out_file = output_filename or f"{clean_b}_{time_window}_creator_audit.xlsx"
 
         if export_excel:
-            self._export_master_excel(clean_b, sorted_unified, ig_data["collabs"], ad_data["ads"], out_file)
+            self._export_master_excel(clean_b, str(time_window), days_back, ig_data["date_range_cohorts"], sorted_unified, ig_data["collabs"], ad_data["ads"], out_file)
 
         print("\n" + "="*80)
         print(f"✅ AUDIT COMPLETE! FOUND {len(sorted_unified)} TOTAL UNIQUE CREATORS")
@@ -542,6 +603,9 @@ class CompetitorIntelligenceClient:
 
         return {
             "brand": clean_b,
+            "time_window": str(time_window),
+            "days_audited": days_back,
+            "date_range_cohorts": ig_data["date_range_cohorts"],
             "total_unique_creators": len(sorted_unified),
             "instagram_grid_creators": ig_data["unique_creators_count"],
             "meta_adlibrary_dark_creators": len([c for c in sorted_unified if not c["on_instagram_grid"]]),
@@ -552,7 +616,7 @@ class CompetitorIntelligenceClient:
             "excel_file": out_file if export_excel else None
         }
 
-    def _export_master_excel(self, brand: str, creators: list, collabs: list, ads: list, filename: str):
+    def _export_master_excel(self, brand: str, time_window: str, days_back: int, cohorts: dict, creators: list, collabs: list, ads: list, filename: str):
         wb = openpyxl.Workbook()
         font_title = Font(name="Calibri", size=12, bold=True, color="FFFFFF")
         font_hdr = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
@@ -562,9 +626,54 @@ class CompetitorIntelligenceClient:
         thin_line = Side(style="thin", color="D5D8DC")
         border_cell = Border(left=thin_line, right=thin_line, top=thin_line, bottom=thin_line)
 
-        # Tab 1: Complete Creators Portfolio
-        ws = wb.active
-        ws.title = "Complete Creators Portfolio"
+        # Tab 1: Executive Summary & Cohorts
+        ws_sum = wb.active
+        ws_sum.title = "Executive Summary"
+        ws_sum.sheet_view.showGridLines = True
+        ws_sum.merge_cells("A1:D1")
+        ws_sum["A1"] = f"Competitor Intelligence Audit Summary — @{brand.upper()} ({time_window.upper()} / {days_back} Days)"
+        ws_sum["A1"].font = font_title
+        ws_sum["A1"].fill = PatternFill("solid", fgColor="0B2240")
+        ws_sum["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_sum.row_dimensions[1].height = 28
+
+        summary_kpis = [
+            ("Target Competitor Brand", f"@{brand}"),
+            ("Time Window Audited", f"{time_window.upper()} ({days_back} Days)"),
+            ("Total Unique Creators Found", len(creators)),
+            ("Instagram Grid Collab Posts", len(collabs)),
+            ("Meta Ad Library Total Ads", len(ads)),
+            ("Collabs in Last 7 Days (1 Week)", cohorts.get("last_7d", 0)),
+            ("Collabs in Last 30 Days (1 Month)", cohorts.get("last_30d", 0)),
+            ("Collabs in Last 90 Days (3 Months)", cohorts.get("last_90d", 0)),
+            ("Collabs in Last 180 Days (6 Months)", cohorts.get("last_180d", 0)),
+            ("Collabs in Full Audit Window", cohorts.get("total_in_window", len(collabs)))
+        ]
+
+        ws_sum.cell(row=2, column=1, value="Metric / Dimension").font = font_hdr
+        ws_sum.cell(row=2, column=1).fill = PatternFill("solid", fgColor="1B2631")
+        ws_sum.cell(row=2, column=1).alignment = Alignment(horizontal="left", vertical="center")
+        ws_sum.cell(row=2, column=2, value="Value / Count").font = font_hdr
+        ws_sum.cell(row=2, column=2).fill = PatternFill("solid", fgColor="1B2631")
+        ws_sum.cell(row=2, column=2).alignment = Alignment(horizontal="center", vertical="center")
+        ws_sum.row_dimensions[2].height = 22
+
+        for idx, (kpi, val) in enumerate(summary_kpis, 1):
+            r = idx + 2
+            c1 = ws_sum.cell(row=r, column=1, value=kpi)
+            c2 = ws_sum.cell(row=r, column=2, value=val)
+            c1.border = border_cell; c2.border = border_cell
+            c1.font = font_bold; c2.font = font_bold
+            c1.alignment = Alignment(horizontal="left", vertical="center")
+            c2.alignment = Alignment(horizontal="center", vertical="center")
+            if isinstance(val, int): c2.number_format = "#,##0"
+            ws_sum.row_dimensions[r].height = 20
+
+        ws_sum.column_dimensions["A"].width = 38
+        ws_sum.column_dimensions["B"].width = 30
+
+        # Tab 2: Complete Creators Portfolio
+        ws = wb.create_sheet("Complete Creators Portfolio")
         ws.sheet_view.showGridLines = True
         ws.merge_cells("A1:J1")
         ws["A1"] = f"Complete Creator Partnerships Portfolio — @{brand.upper()} ({len(creators)} Unique Creators)"
@@ -611,7 +720,7 @@ class CompetitorIntelligenceClient:
                 elif c_idx == 10: cell.font = font_link; cell.alignment = Alignment(horizontal="left", vertical="center"); cell.hyperlink = val if val else None
             ws.row_dimensions[r_num].height = 20
 
-        # Tab 2: Instagram Collab Posts
+        # Tab 3: Instagram Collab Posts
         ws_collabs = wb.create_sheet("Instagram Collab Posts")
         ws_collabs.sheet_view.showGridLines = True
         ws_collabs.merge_cells("A1:I1")
@@ -661,7 +770,7 @@ class CompetitorIntelligenceClient:
                 elif c_idx == 9: cell.font = font_link; cell.alignment = Alignment(horizontal="left", vertical="center"); cell.hyperlink = val if val else None
             ws_collabs.row_dimensions[r_num].height = 20
 
-        # Tab 3: Meta Ad Library Ads
+        # Tab 4: Meta Ad Library Ads
         ws_ads = wb.create_sheet("Meta Ad Library Ads")
         ws_ads.sheet_view.showGridLines = True
         ws_ads.merge_cells("A1:H1")
