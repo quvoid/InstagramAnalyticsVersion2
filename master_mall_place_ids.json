@@ -1,0 +1,123 @@
+[
+  {
+    "mall_name": "KOPA Mall, Pune (Koregaon Park)",
+    "instagram_handle": "@kopapune",
+    "city": "Pune",
+    "instagram_place_id": "149740888215226",
+    "place_name": "KOPA Pune",
+    "address": "The Kopa",
+    "latitude": 18.53901,
+    "longitude": 73.89888,
+    "explore_url": "https://www.instagram.com/explore/locations/149740888215226/"
+  },
+  {
+    "mall_name": "Lulu Mall Hyderabad (Kukatpally Y Junction)",
+    "instagram_handle": "@lulumallhyderabad",
+    "city": "Hyderabad",
+    "instagram_place_id": "316918795673504",
+    "place_name": "LuLu Mall Hyderabad",
+    "address": "Survey No. 1050, KPHB 3rd Phase, Kukatpally, Balanagar Mandal",
+    "latitude": 17.48688,
+    "longitude": 78.39255,
+    "explore_url": "https://www.instagram.com/explore/locations/316918795673504/"
+  },
+  {
+    "mall_name": "Inorbit Mall Cyberabad",
+    "instagram_handle": "@inorbitcyberabad",
+    "city": "Hyderabad",
+    "instagram_place_id": "1374933",
+    "place_name": "LuLu Mall Kochi",
+    "address": "34/1000, N.H 47",
+    "latitude": 10.027165231442,
+    "longitude": 76.307921987882,
+    "explore_url": "https://www.instagram.com/explore/locations/1374933/"
+  },
+  {
+    "mall_name": "Phoenix Avenue of Stars / Marketcity Pune",
+    "instagram_handle": "@phoenixavenueofstars",
+    "city": "Pune",
+    "instagram_place_id": "234338264",
+    "place_name": "Phoenix Avenue Of Stars",
+    "address": "Pune Nagar Road",
+    "latitude": 18.56224552,
+    "longitude": 73.91673658,
+    "explore_url": "https://www.instagram.com/explore/locations/234338264/"
+  },
+  {
+    "mall_name": "Phoenix Mall of the Millennium Wakad",
+    "instagram_handle": "@phoenix_millennium",
+    "city": "Pune",
+    "instagram_place_id": "114293561582939",
+    "place_name": " Phoenix Mall of the Millennium",
+    "address": "Mall of the Millennium, Wakad",
+    "latitude": 18.59319,
+    "longitude": 73.77393,
+    "explore_url": "https://www.instagram.com/explore/locations/114293561582939/"
+  },
+  {
+    "mall_name": "The Pavillion Pune (SB Road)",
+    "instagram_handle": "@pavillionpune",
+    "city": "Pune",
+    "instagram_place_id": "1398451676914590",
+    "place_name": "The Pavillion Pune",
+    "address": "Senapati Bapat Road",
+    "latitude": 18.533611141749,
+    "longitude": 73.829653859138,
+    "explore_url": "https://www.instagram.com/explore/locations/1398451676914590/"
+  },
+  {
+    "mall_name": "Seasons Mall Pune (Magarpatta)",
+    "instagram_handle": "@seasons_mall",
+    "city": "Pune",
+    "instagram_place_id": "32761533",
+    "place_name": "Seasons Mall",
+    "address": "magarpatta city",
+    "latitude": 18.51908231,
+    "longitude": 73.93167425,
+    "explore_url": "https://www.instagram.com/explore/locations/32761533/"
+  },
+  {
+    "mall_name": "Amanora Mall Pune (Hadapsar)",
+    "instagram_handle": "@amanoramall",
+    "city": "Pune",
+    "instagram_place_id": "746599765500408",
+    "place_name": "Amanora Mall",
+    "address": "",
+    "latitude": 18.5188945,
+    "longitude": 73.934626,
+    "explore_url": "https://www.instagram.com/explore/locations/746599765500408/"
+  },
+  {
+    "mall_name": "Nexus Hyderabad Mall (Kukatpally)",
+    "instagram_handle": "@nexus_hyderabad",
+    "city": "Hyderabad",
+    "instagram_place_id": "316088138",
+    "place_name": "Nexus Hyderabad",
+    "address": "Plot No S-16, Survey No 1009, Opposite Malaysian Township, KPHB 6th Phase, Kukatpally",
+    "latitude": 17.48421306,
+    "longitude": 78.38904413,
+    "explore_url": "https://www.instagram.com/explore/locations/316088138/"
+  },
+  {
+    "mall_name": "Sarath City Capital Mall (Kondapur)",
+    "instagram_handle": "@sarathcitycapital.hyd",
+    "city": "Hyderabad",
+    "instagram_place_id": "1628149820740485",
+    "place_name": "Sarath City Capital Mall",
+    "address": "Sarath City Capital Mall, Gachibowli - Miyapur Rd, Whitefields, Kondapur",
+    "latitude": 17.457531164957,
+    "longitude": 78.363930463823,
+    "explore_url": "https://www.instagram.com/explore/locations/1628149820740485/"
+  },
+  {
+    "mall_name": "GVK One Mall (Banjara Hills)",
+    "instagram_handle": "@gvkone",
+    "city": "Hyderabad",
+    "instagram_place_id": "277785458937883",
+    "place_name": "Gvk One Hyderabad",
+    "address": "",
+    "latitude": 17.41933236,
+    "longitude": 78.44850587,
+    "explore_url": "https://www.instagram.com/explore/locations/277785458937883/"
+  }
+]
