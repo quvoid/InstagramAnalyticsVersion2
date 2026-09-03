@@ -34,12 +34,27 @@ from openpyxl.chart.label import DataLabelList
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-MAPS_REVIEWS_PATH = r"C:\Users\omkar\OneDrive\Desktop\ScrapePlaces\data\all_malls_reviews.xlsx"
-YOUTUBE_ANALYSIS_PATH = r"C:\Users\omkar\Documents\antigravity\keen-bardeen\youtube_mall_master_analysis.xlsx"
-INSTA_DATASET_PATH = "pune_hyderabad_malls_1year_dataset.json"
-META_ADS_PATH = "real_mall_meta_ads_dataset.json"
-INSTA_COMMENTS_PATH = "real_mall_comments_dataset.json"
-MASTER_WORKBOOK_PATH = "pune_hyderabad_malls_master_analysis.xlsx"
+def resolve_file(filename, fallback_path=None):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(script_dir, "competitor", "data", filename),
+        os.path.join(script_dir, "data", filename),
+        os.path.join(script_dir, filename),
+        os.path.join(os.getcwd(), filename),
+    ]
+    if fallback_path:
+        candidates.append(fallback_path)
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return fallback_path or filename
+
+MAPS_REVIEWS_PATH = resolve_file("all_malls_reviews.xlsx", r"C:\Users\omkar\OneDrive\Desktop\ScrapePlaces\data\all_malls_reviews.xlsx")
+YOUTUBE_ANALYSIS_PATH = resolve_file("youtube_mall_master_analysis.xlsx", r"C:\Users\omkar\Documents\antigravity\keen-bardeen\youtube_mall_master_analysis.xlsx")
+INSTA_DATASET_PATH = resolve_file("pune_hyderabad_malls_1year_dataset.json")
+META_ADS_PATH = resolve_file("real_mall_meta_ads_dataset.json")
+INSTA_COMMENTS_PATH = resolve_file("real_mall_comments_dataset.json")
+MASTER_WORKBOOK_PATH = resolve_file("pune_hyderabad_malls_master_analysis.xlsx")
 
 print("="*80)
 print("APPENDING 11 NEW ANALYSIS TABS TO MASTER WORKBOOK")
