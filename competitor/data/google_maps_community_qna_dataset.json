@@ -1,0 +1,124 @@
+{
+  "total_malls_audited": 5,
+  "qna_data": [
+    {
+      "mall_name": "KOPA Mall Pune (Lake Shore)",
+      "city": "Pune",
+      "is_client": true,
+      "qa_pairs": [
+        {
+          "topic": "🚗 Valet & Parking Charges",
+          "question": "Is valet parking available at KOPA Mall Pune, and what are the charges?",
+          "community_answer": "Yes, seamless VIP Valet Parking is available at the main Koregaon Park entrance. Charges are ₹100, and complimentary valet is provided on spending above ₹2,000 at KOPA stores or dining.",
+          "kopa_competitive_advantage": "Dedicated zero-wait valet entry right at the gate — no 40-minute basement queues like Phoenix.",
+          "google_search_ad_copy": "Headline: Skip Parking Queues | Complimentary Valet at KOPA | Description: Experience Pune's finest luxury mall in Koregaon Park with zero-wait valet parking. Shop Armani, Sephora & dine rooftop."
+        },
+        {
+          "topic": "🐾 Pet Friendly Policy",
+          "question": "Are pets allowed inside KOPA Mall Pune?",
+          "community_answer": "Yes! KOPA Mall is 100% pet-friendly in its open-air plazas, ground floor walkways, and outdoor restaurant patios. Water bowls are provided for pets.",
+          "kopa_competitive_advantage": "Pune's premier pet-friendly luxury lifestyle destination (competitor malls strictly ban pets).",
+          "google_search_ad_copy": "Headline: Pet-Friendly Luxury Shopping | KOPA Mall Pune | Description: Bring your furry friend along! Enjoy open-air cafes, outdoor dining, and luxury retail in Koregaon Park."
+        },
+        {
+          "topic": "🎬 PVR Director's Cut Cinema",
+          "question": "Does KOPA have PVR Director's Cut? How is it different from normal PVR?",
+          "community_answer": "Yes, KOPA houses Pune's exclusive PVR Director's Cut featuring 100% luxury recliner seating, personal butler call buttons, and a chef-curated gourmet dining menu served at your seat.",
+          "kopa_competitive_advantage": "Only cinema in Pune offering true ultra-luxury in-theatre dining with full recliners.",
+          "google_search_ad_copy": "Headline: PVR Director's Cut Pune | Exclusively at KOPA | Description: Reimagine cinema with luxury recliners, in-theatre gourmet dining & butler service. Book VIP tickets now on BookMyShow."
+        },
+        {
+          "topic": "⚡ EV Charging Stations",
+          "question": "Are fast EV chargers available in KOPA Mall basement parking?",
+          "community_answer": "Yes, dedicated Type-2 and DC Fast EV charging stations (Tata Power / Jio-bp) are available in Basement Level 1 near the valet bay.",
+          "kopa_competitive_advantage": "Fast EV charging while dining or shopping.",
+          "google_search_ad_copy": "Headline: EV Charging Available | KOPA Mall Koregaon Park | Description: Charge your electric vehicle at fast DC chargers while you shop luxury fashion and enjoy gourmet rooftop dining."
+        }
+      ]
+    },
+    {
+      "mall_name": "Phoenix Avenue of Stars / Marketcity Pune",
+      "city": "Pune",
+      "is_client": false,
+      "qa_pairs": [
+        {
+          "topic": "🚗 Parking Rates & Delay",
+          "question": "What are the car parking charges at Phoenix Marketcity Pune on weekends, and is there rush?",
+          "community_answer": "Car parking is ₹150 for 4 hours. On Friday-Sunday evenings, there is extreme traffic on Nagar Road and parking queues take 30 to 45 minutes just to enter the basement.",
+          "kopa_competitive_advantage": "KOPA is 5 minutes away with instant valet and zero basement traffic.",
+          "google_search_ad_copy": "Headline: Stuck in Phoenix Parking? | Escape to KOPA Pune | Description: Tired of 45-min parking queues? KOPA Koregaon Park is 5 mins away with instant valet parking & curated luxury."
+        },
+        {
+          "topic": "🐾 Pet Policy",
+          "question": "Can I bring my dog to Phoenix Marketcity Pune?",
+          "community_answer": "No, pets of any kind are strictly not allowed inside Phoenix Marketcity Pune.",
+          "kopa_competitive_advantage": "KOPA welcomes pets in open-air corridors and patio cafes.",
+          "google_search_ad_copy": "Headline: Looking For Pet-Friendly Malls? | Visit KOPA Pune | Description: While other malls ban pets, KOPA in Koregaon Park welcomes your dog in our outdoor cafes and open-air luxury plazas."
+        },
+        {
+          "topic": "🚇 Metro Connectivity",
+          "question": "Which is the nearest metro station to Phoenix Marketcity Pune?",
+          "community_answer": "Ramwadi Metro Station on the Aqua Line is about 800m away (10-15 min walk or auto rickshaw).",
+          "kopa_competitive_advantage": "Central Koregaon Park location accessible via Kalyani Nagar and KP main road.",
+          "google_search_ad_copy": "Headline: Boutique Luxury Shopping | 5 Mins from Kalyani Nagar | Description: Discover KOPA Koregaon Park. Curated luxury fashion, rooftop dining and zero crowd chaos."
+        }
+      ]
+    },
+    {
+      "mall_name": "Seasons Mall Pune",
+      "city": "Pune",
+      "is_client": false,
+      "qa_pairs": [
+        {
+          "topic": "🚗 Parking & Weekend Rush",
+          "question": "Is parking free at Seasons Mall Pune?",
+          "community_answer": "No, parking is chargeable (₹40 for 2-wheelers, ₹80 for 4-wheelers). The basement gets very crowded and chaotic on Saturday and Sunday evenings.",
+          "kopa_competitive_advantage": "KOPA provides a serene, premium shopping environment without chaotic mass crowds.",
+          "google_search_ad_copy": "Headline: Upgrade Your Weekend | Discover KOPA Koregaon Park | Description: Escape the crowded Hadapsar malls. Enjoy tranquil open-air luxury shopping and curated dining at KOPA."
+        },
+        {
+          "topic": "🍽️ Dining & Buffets",
+          "question": "Which are the best rooftop restaurants in Seasons Mall?",
+          "community_answer": "There are family buffets and casual sports lounges, but high-end luxury fine dining or curated cocktail lounges are limited.",
+          "kopa_competitive_advantage": "KOPA's rooftop features Pune's top gourmet dining restaurants and cocktail lounges.",
+          "google_search_ad_copy": "Headline: Gourmet Rooftop Dining Pune | Reserve at KOPA | Description: Date night without noisy food courts. Book your rooftop table at KOPA's curated gourmet lounges in Koregaon Park."
+        }
+      ]
+    },
+    {
+      "mall_name": "Lulu Mall Hyderabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "qa_pairs": [
+        {
+          "topic": "👥 Crowd & Traffic Chaos",
+          "question": "Is Lulu Mall Hyderabad very crowded on weekends?",
+          "community_answer": "Yes, extremely crowded. Kukatpally Y Junction experiences massive traffic jams, parking entry takes 45 mins, and hypermarket billing queues take over 30-40 minutes.",
+          "kopa_competitive_advantage": "Lake Shore Y Junction offers a modern high-street format with instant entry and zero stampede.",
+          "google_search_ad_copy": "Headline: Skip Lulu Mall Gridlock | Shop at Lake Shore Y Junction | Description: Why wait in 45-min hypermarket lines? Discover modern high-street shopping & dining at Lake Shore Y Junction."
+        },
+        {
+          "topic": "🛒 Hypermarket Timings",
+          "question": "What time does Lulu Hypermarket open?",
+          "community_answer": "Lulu Hypermarket opens at 9:00 AM and closes at 11:00 PM daily.",
+          "kopa_competitive_advantage": "Lake Shore Y Junction provides seamless curated daily essentials and lifestyle retail.",
+          "google_search_ad_copy": "Headline: Hassle-Free Retail & Dining | Lake Shore Y Junction | Description: Modern high-street shopping in Kukatpally. Quick access, ample parking, and curated top brands."
+        }
+      ]
+    },
+    {
+      "mall_name": "Sarath City Capital Mall Hyderabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "qa_pairs": [
+        {
+          "topic": "🚶 Mall Navigation & Size",
+          "question": "How big is Sarath City Capital Mall and how many floors?",
+          "community_answer": "It has 8 massive retail floors and over 450 stores. It requires 4-5 hours to explore and can be very exhausting with long elevator wait times.",
+          "kopa_competitive_advantage": "Boutique, curated, walkable luxury scale where every store is within easy reach.",
+          "google_search_ad_copy": "Headline: Curated Luxury Without The 10,000 Steps | KOPA & Lake Shore | Description: Shopping designed for pleasure, not exhaustion. Discover curated luxury fashion and dining."
+        }
+      ]
+    }
+  ]
+}

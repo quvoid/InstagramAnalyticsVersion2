@@ -1,0 +1,291 @@
+{
+  "total_malls": 12,
+  "malls": [
+    {
+      "mall_name": "KOPA Mall Pune (Lake Shore)",
+      "city": "Pune",
+      "is_client": true,
+      "total_store_count": 85,
+      "positioning_tier": "Boutique Luxury & Curated Lifestyle",
+      "anchor_tenants": [
+        "PVR Director's Cut (VIP Luxury)",
+        "Tira Beauty",
+        "Sephora",
+        "Armani Exchange",
+        "Mango",
+        "Michael Kors",
+        "Under Armour"
+      ],
+      "exclusive_kopa_tenants": [
+        "PVR Director's Cut (Pune's only ultra-luxury recliner cinema with in-theatre dining)",
+        "Tira Beauty (Flagship experience store)",
+        "Curated Rooftop Gourmet Dining Enclave (Bespoke fine-dining & cocktails)",
+        "Paul Smith & Selected Luxury Fashion lines"
+      ],
+      "category_distribution": {
+        "Luxury & Bridge-to-Luxury Fashion": "38%",
+        "Gourmet Dining & Rooftop Lounges": "28%",
+        "Premium Beauty & Fragrance (Sephora/Tira)": "18%",
+        "VIP Entertainment (PVR Director's Cut)": "10%",
+        "Athleisure & Lifestyle": "6%"
+      },
+      "ad_hook_usp": "\"Looking for Armani, Sephora & Tira without the chaos? KOPA Koregaon Park — Pune's curated luxury enclave.\""
+    },
+    {
+      "mall_name": "Phoenix Avenue of Stars / Marketcity Pune",
+      "city": "Pune",
+      "is_client": false,
+      "total_store_count": 320,
+      "positioning_tier": "Mass Mega-Regional Mall",
+      "anchor_tenants": [
+        "PVR P[XL] & IMAX",
+        "Zara",
+        "H&M",
+        "IKEA",
+        "Lifestyle",
+        "Shoppers Stop",
+        "Hamleys",
+        "Marks & Spencer"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Fast Fashion & High Street": "45%",
+        "Mass Food Court & QSR": "25%",
+        "Department Stores & Anchors": "15%",
+        "Electronics & Home (IKEA/Samsung)": "10%",
+        "Entertainment & Bowling": "5%"
+      },
+      "ad_hook_usp": "Massive variety but severe congestion. Vulnerable to KOPA valet conquesting."
+    },
+    {
+      "mall_name": "Phoenix Mall of the Millennium Wakad",
+      "city": "Pune",
+      "is_client": false,
+      "total_store_count": 280,
+      "positioning_tier": "Mass Regional Mall (West Pune)",
+      "anchor_tenants": [
+        "INOX Megaplex",
+        "Zara",
+        "H&M",
+        "Uniqlo",
+        "Lifestyle",
+        "Zudio",
+        "Reliance Digital"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Fast Fashion & High Street": "48%",
+        "Food Court & Family Dining": "26%",
+        "Department Stores": "14%",
+        "Electronics & Tech": "8%",
+        "Entertainment": "4%"
+      },
+      "ad_hook_usp": "Dominates West Pune IT belt (Hinjawadi) but lacks boutique luxury atmosphere."
+    },
+    {
+      "mall_name": "The Pavillion Pune",
+      "city": "Pune",
+      "is_client": false,
+      "total_store_count": 110,
+      "positioning_tier": "Urban Mid-to-Premium Mall",
+      "anchor_tenants": [
+        "PVR Cinemas",
+        "Zara",
+        "Forever 21",
+        "Shoppers Stop",
+        "Starbucks",
+        "Dune London"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Fashion & Apparel": "52%",
+        "F&B & Cafes": "28%",
+        "Beauty & Accessories": "12%",
+        "Cinema": "8%"
+      },
+      "ad_hook_usp": "Strong central Pune location on SB Road, but limited high-luxury tenant depth."
+    },
+    {
+      "mall_name": "Seasons Mall Pune",
+      "city": "Pune",
+      "is_client": false,
+      "typical_time_spent": "2 - 3 hours",
+      "total_store_count": 160,
+      "positioning_tier": "Mass Suburban / Value Mall",
+      "anchor_tenants": [
+        "Cinepolis 15-Screen",
+        "Reliance Hypermarket",
+        "Pantaloons",
+        "Max",
+        "Broadway Live"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Value & Mid-Tier Retail": "50%",
+        "Food Court & Buffets": "30%",
+        "Cinema & Bowling": "15%",
+        "Electronics": "5%"
+      },
+      "ad_hook_usp": "Value & IT mass footfall in Hadapsar. Lacks luxury brands entirely."
+    },
+    {
+      "mall_name": "Amanora Mall Pune",
+      "city": "Pune",
+      "is_client": false,
+      "total_store_count": 190,
+      "positioning_tier": "Mass Lifestyle Town Centre",
+      "anchor_tenants": [
+        "INOX",
+        "Decathlon",
+        "Central",
+        "Big Bazaar / Smart",
+        "Amoeba Gaming"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Family Retail & Sports": "44%",
+        "Outdoor Dining & Cafes": "32%",
+        "Entertainment & Games": "16%",
+        "Department Stores": "8%"
+      },
+      "ad_hook_usp": "Sprawling outdoor format with high walking fatigue. Good family entertainment."
+    },
+    {
+      "mall_name": "Lulu Mall Hyderabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "total_store_count": 140,
+      "positioning_tier": "Mass Hypermarket Destination",
+      "anchor_tenants": [
+        "Lulu Hypermarket",
+        "Lulu Fashion Store",
+        "Lulu Connect Electronics",
+        "Funtura",
+        "Cinepolis"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Hypermarket & Grocery": "35%",
+        "Fast Fashion & Value Retail": "35%",
+        "Food Court & QSR": "20%",
+        "Entertainment": "10%"
+      },
+      "ad_hook_usp": "Hypermarket heavy. Extreme footfall volume but low luxury conversion."
+    },
+    {
+      "mall_name": "Lake Shore Y Junction (Hyderabad)",
+      "city": "Hyderabad",
+      "is_client": true,
+      "total_store_count": 75,
+      "positioning_tier": "Modern High-Street & Curated Retail",
+      "anchor_tenants": [
+        "Anchor Department Store",
+        "Curated Dining Hub",
+        "Multiplex Entertainment",
+        "Global Fashion Brands"
+      ],
+      "exclusive_kopa_tenants": [
+        "Seamless High-Street Walkability (Avoid 45-min hypermarket billing chaos)",
+        "Dedicated Valet & Quick Parking Drop-off",
+        "Curated F&B Terrace"
+      ],
+      "category_distribution": {
+        "Fashion & High Street": "42%",
+        "Curated F&B & Cafes": "32%",
+        "Beauty & Personal Care": "16%",
+        "Entertainment": "10%"
+      },
+      "ad_hook_usp": "\"Shop in peace. Modern retail & rooftop dining without the chaotic stampede at Y Junction.\""
+    },
+    {
+      "mall_name": "Nexus Hyderabad Mall (Forum Sujana)",
+      "city": "Hyderabad",
+      "is_client": false,
+      "total_store_count": 180,
+      "positioning_tier": "Mid-to-Upper Regional Mall",
+      "anchor_tenants": [
+        "PVR Cinemas",
+        "Zara",
+        "H&M",
+        "Marks & Spencer",
+        "Shoppers Stop"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Fashion & Apparel": "50%",
+        "Food Court & Casual Dining": "25%",
+        "Department Stores": "15%",
+        "Multiplex": "10%"
+      },
+      "ad_hook_usp": "Dominant shopping hub in KPHB. Established fashion tenant mix."
+    },
+    {
+      "mall_name": "Sarath City Capital Mall",
+      "city": "Hyderabad",
+      "is_client": false,
+      "total_store_count": 450,
+      "positioning_tier": "Mega Giant Mall (8 Floors)",
+      "anchor_tenants": [
+        "AMB Cinemas (Mahesh Babu)",
+        "Uniqlo",
+        "Zara",
+        "H&M",
+        "Lifestyle",
+        "Marks & Spencer"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Fashion & Lifestyle": "46%",
+        "Food Courts & 40+ Restaurants": "28%",
+        "Bazaar & Value Zones": "14%",
+        "Entertainment (Tridom/Snow)": "12%"
+      },
+      "ad_hook_usp": "Largest mall in Hyderabad by floor count. High exploration time and navigation complexity."
+    },
+    {
+      "mall_name": "Inorbit Mall Cyberabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "total_store_count": 160,
+      "positioning_tier": "Premium Waterfront Regional Mall",
+      "anchor_tenants": [
+        "PVR INOX",
+        "Shoppers Stop",
+        "H&M",
+        "Hard Rock Cafe",
+        "Chili's",
+        "Dunkin'"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Fashion & Apparel": "45%",
+        "Lake-view F&B & Pubs": "35%",
+        "Department Stores": "12%",
+        "Entertainment": "8%"
+      },
+      "ad_hook_usp": "Strong corporate evening & weekend dining crowd overlooking Durgam Cheruvu."
+    },
+    {
+      "mall_name": "GVK One Mall Hyderabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "total_store_count": 95,
+      "positioning_tier": "Upscale Boutique / HNI Mall",
+      "anchor_tenants": [
+        "INOX Cinemas",
+        "Shoppers Stop",
+        "Hard Rock Cafe",
+        "Starbucks",
+        "Mac"
+      ],
+      "exclusive_kopa_tenants": [],
+      "category_distribution": {
+        "Premium Fashion": "50%",
+        "Dining & Cafes": "25%",
+        "Beauty & Cosmetics": "15%",
+        "Cinema": "10%"
+      },
+      "ad_hook_usp": "Banjara Hills legacy mall catering to old wealth / HNI residents."
+    }
+  ]
+}

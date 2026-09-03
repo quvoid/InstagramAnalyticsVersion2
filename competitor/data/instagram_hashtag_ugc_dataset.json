@@ -1,0 +1,254 @@
+{
+  "total_market_posts": 798450,
+  "malls": [
+    {
+      "mall_name": "KOPA Mall Pune (Lake Shore)",
+      "city": "Pune",
+      "is_client": true,
+      "primary_tags": [
+        "#kopapune",
+        "#kopamall",
+        "#kopamallpune",
+        "#kopakoregaonpark",
+        "#kopalakeshore"
+      ],
+      "lifestyle_tags": [
+        "#kopaeats",
+        "#kopavibe",
+        "#kopapuneevents",
+        "#kopashopping"
+      ],
+      "est_total_posts": 18450,
+      "weekly_ugc_growth": "+320 posts/wk",
+      "ugc_sentiment_score": 92.4,
+      "dominant_content_type": "Quiet Luxury / Aesthetic Reels & OOTD",
+      "share_of_voice_pct": 2.31
+    },
+    {
+      "mall_name": "Phoenix Avenue of Stars / Marketcity",
+      "city": "Pune",
+      "is_client": false,
+      "primary_tags": [
+        "#phoenixmarketcitypune",
+        "#phoenixmarketcity",
+        "#phoenixavenueofstars",
+        "#phoenixpune"
+      ],
+      "lifestyle_tags": [
+        "#phoenixpunefood",
+        "#phoenixeoss",
+        "#phoenixevents",
+        "#phoenixmarketcitypuneevents"
+      ],
+      "est_total_posts": 142800,
+      "weekly_ugc_growth": "+1,450 posts/wk",
+      "ugc_sentiment_score": 78.2,
+      "dominant_content_type": "Concerts / EOSS Bargains / Food Court Hauls",
+      "share_of_voice_pct": 17.88
+    },
+    {
+      "mall_name": "Phoenix Mall of the Millennium",
+      "city": "Pune",
+      "is_client": false,
+      "primary_tags": [
+        "#phoenixmallofthemillennium",
+        "#phoenixmillennium",
+        "#phoenixmillenniumwakad",
+        "#millenniummallpune"
+      ],
+      "lifestyle_tags": [
+        "#wakadmall",
+        "#phoenixwakad",
+        "#millenniumeats"
+      ],
+      "est_total_posts": 48600,
+      "weekly_ugc_growth": "+680 posts/wk",
+      "ugc_sentiment_score": 81.5,
+      "dominant_content_type": "Grand Launch Vlogs / West Pune Family Visits",
+      "share_of_voice_pct": 6.09
+    },
+    {
+      "mall_name": "The Pavillion Pune",
+      "city": "Pune",
+      "is_client": false,
+      "primary_tags": [
+        "#thepavillionpune",
+        "#thepavilionmall",
+        "#thepavilion",
+        "#pavillionmallpune"
+      ],
+      "lifestyle_tags": [
+        "#pavillionpunefood",
+        "#sbroadmall",
+        "#pavillionshopping"
+      ],
+      "est_total_posts": 36200,
+      "weekly_ugc_growth": "+290 posts/wk",
+      "ugc_sentiment_score": 83.1,
+      "dominant_content_type": "College Hangouts / Quick Retail / SB Road Cafe",
+      "share_of_voice_pct": 4.53
+    },
+    {
+      "mall_name": "Seasons Mall Pune",
+      "city": "Pune",
+      "is_client": false,
+      "primary_tags": [
+        "#seasonsmall",
+        "#seasonsmallpune",
+        "#seasonsmagarpatta"
+      ],
+      "lifestyle_tags": [
+        "#seasonsfoodcourt",
+        "#seasonsmallhadapsar",
+        "#seasonsevents"
+      ],
+      "est_total_posts": 64500,
+      "weekly_ugc_growth": "+420 posts/wk",
+      "ugc_sentiment_score": 74.0,
+      "dominant_content_type": "Magarpatta IT Corridor / Weekend Crowds / Bowling",
+      "share_of_voice_pct": 8.08
+    },
+    {
+      "mall_name": "Amanora Mall Pune",
+      "city": "Pune",
+      "is_client": false,
+      "primary_tags": [
+        "#amanoramall",
+        "#amanoramallpune",
+        "#amanoratowncentre"
+      ],
+      "lifestyle_tags": [
+        "#amanorafoodcourt",
+        "#amanoraevents",
+        "#amanorapune"
+      ],
+      "est_total_posts": 58900,
+      "weekly_ugc_growth": "+380 posts/wk",
+      "ugc_sentiment_score": 76.8,
+      "dominant_content_type": "Sprawling Atrium / Weekend Family Outings",
+      "share_of_voice_pct": 7.38
+    },
+    {
+      "mall_name": "Lake Shore Y Junction (Hyderabad)",
+      "city": "Hyderabad",
+      "is_client": true,
+      "primary_tags": [
+        "#lakeshoreyjunction",
+        "#yjunctionmall",
+        "#lakeshorehyderabad"
+      ],
+      "lifestyle_tags": [
+        "#kukatpallyshopping",
+        "#yjunctioneats",
+        "#lakeshorekukatpally"
+      ],
+      "est_total_posts": 12600,
+      "weekly_ugc_growth": "+240 posts/wk",
+      "ugc_sentiment_score": 89.6,
+      "dominant_content_type": "Modern High-Street Retail / Dining Experience",
+      "share_of_voice_pct": 1.58
+    },
+    {
+      "mall_name": "Lulu Mall Hyderabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "primary_tags": [
+        "#lulumallhyderabad",
+        "#lulumallhyd",
+        "#lulumallkukatpally"
+      ],
+      "lifestyle_tags": [
+        "#luluhypermarket",
+        "#lulumallevents",
+        "#lulukukatpally"
+      ],
+      "est_total_posts": 118400,
+      "weekly_ugc_growth": "+1,820 posts/wk",
+      "ugc_sentiment_score": 71.4,
+      "dominant_content_type": "Viral Food Hauls / Massive Crowds / Hypermarket",
+      "share_of_voice_pct": 14.83
+    },
+    {
+      "mall_name": "Nexus Hyderabad Mall (Forum Sujana)",
+      "city": "Hyderabad",
+      "is_client": false,
+      "primary_tags": [
+        "#nexushyderabad",
+        "#forumsujanamall",
+        "#nexushyderabadmall"
+      ],
+      "lifestyle_tags": [
+        "#kphbmall",
+        "#nexusmallhyd",
+        "#nexusdining"
+      ],
+      "est_total_posts": 72100,
+      "weekly_ugc_growth": "+540 posts/wk",
+      "ugc_sentiment_score": 79.8,
+      "dominant_content_type": "KPHB Student & IT Retail / Mid-Tier Dining",
+      "share_of_voice_pct": 9.03
+    },
+    {
+      "mall_name": "Sarath City Capital Mall",
+      "city": "Hyderabad",
+      "is_client": false,
+      "primary_tags": [
+        "#sarathcitycapitalmall",
+        "#sarathcitymall",
+        "#sarathcityhyd"
+      ],
+      "lifestyle_tags": [
+        "#gachibowlimall",
+        "#sarathcityeats",
+        "#sarathcityshopping"
+      ],
+      "est_total_posts": 96300,
+      "weekly_ugc_growth": "+910 posts/wk",
+      "ugc_sentiment_score": 77.2,
+      "dominant_content_type": "Massive 8-Floor Exploration / IT Family Outings",
+      "share_of_voice_pct": 12.06
+    },
+    {
+      "mall_name": "Inorbit Mall Cyberabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "primary_tags": [
+        "#inorbitmallcyberabad",
+        "#inorbitcyberabad",
+        "#inorbitmallhyd",
+        "#inorbitmall"
+      ],
+      "lifestyle_tags": [
+        "#durgamcheruvuview",
+        "#inorbithyd",
+        "#inorbitdining"
+      ],
+      "est_total_posts": 88400,
+      "weekly_ugc_growth": "+650 posts/wk",
+      "ugc_sentiment_score": 84.5,
+      "dominant_content_type": "Lake-view Dining / Hitech City Corporate Hangouts",
+      "share_of_voice_pct": 11.07
+    },
+    {
+      "mall_name": "GVK One Mall Hyderabad",
+      "city": "Hyderabad",
+      "is_client": false,
+      "primary_tags": [
+        "#gvkone",
+        "#gvkonemall",
+        "#gvkonemallhyd",
+        "#gvkonebanjarahills"
+      ],
+      "lifestyle_tags": [
+        "#banjarahillsmall",
+        "#gvkonedining",
+        "#gvkoneshopping"
+      ],
+      "est_total_posts": 41200,
+      "weekly_ugc_growth": "+190 posts/wk",
+      "ugc_sentiment_score": 82.0,
+      "dominant_content_type": "Banjara Hills HNI Retail / Inox / Shoppers Stop",
+      "share_of_voice_pct": 5.16
+    }
+  ]
+}
