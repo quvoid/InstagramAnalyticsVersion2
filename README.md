@@ -2,6 +2,16 @@
 
 An enterprise-grade Python SDK, REST API (FastAPI), and CLI engine to scrape Instagram brand collaboration campaigns, verify Meta Paid Partnership toggles, detect paid media ad spend (boosted reels), classify creator tiers, analyze video content genres, and export executive-ready Excel workbooks and CSV reports.
 
+> 💡 **Natural Language Execution & AI Agent Support**  
+> Run any scraping, auditing, or reporting pipeline using natural language:  
+> `python run.py "find kolkata creators 10k"`  
+> `python run.py "audit profile @rjpraveen"`  
+> `python run.py "scan fintech brands 2 years"`  
+> `python run.py "list master workbooks"`  
+>  
+> 📖 **Full Asset Directory**: [`catalog/MASTER_DIRECTORY.md`](catalog/MASTER_DIRECTORY.md)  
+> 🤖 **AI Agent Operating Guide**: [`AGENTS.md`](AGENTS.md)
+
 ---
 
 ## 📑 Table of Contents

@@ -1,0 +1,148 @@
+{
+  "project_name": "Instagram & Omnichannel Marketing Intelligence Engine",
+  "version": "2.0.0",
+  "intents": [
+    {
+      "id": "kolkata_creator_discovery",
+      "name": "Kolkata & Bengal Creator Discovery Engine",
+      "description": "Discovers authentic Kolkata/Bengal creators with 10K+ followers, checks brand-collab readiness, audits exact followers, and generates master Excel.",
+      "triggers": [
+        "find kolkata creators",
+        "kolkata creators 10k",
+        "discover bengal influencers",
+        "bengal creator scan",
+        "durga puja creators",
+        "kolkata food creators",
+        "kolkata lifestyle creators",
+        "scale kolkata creators",
+        "kolkata 500 creators"
+      ],
+      "script": "core/kolkata_engine.py",
+      "default_args": {
+        "min_followers": 10000,
+        "target_new": 100
+      },
+      "deliverables": [
+        "kolkata_creators_master_discovery.xlsx",
+        "bengal_kolkata_authentic_creators_all_inclusive_175.xlsx",
+        "discovery_verified_creators.json"
+      ]
+    },
+    {
+      "id": "fintech_deep_scan_2years",
+      "name": "FinTech 4-Tier 2-Year Collaboration Deep Scan",
+      "description": "Scrapes 53 Indian FinTech brands across 6 segments over a 2-year window (Aug 2024 - Aug 2026), detects boosted ad spend, checks Meta Paid Partnership toggle, and outputs 3-tab master Excel.",
+      "triggers": [
+        "scan fintech brands",
+        "deep scan fintech",
+        "fintech 2 years",
+        "fintech 4 tier scan",
+        "cred collabs",
+        "phonepe collaborations",
+        "paytm partnerships",
+        "fintech partnerships 2 years"
+      ],
+      "script": "core/fintech_engine.py",
+      "default_args": {
+        "cutoff_date": "2024-08-01",
+        "all_brands": true
+      },
+      "deliverables": [
+        "India_Fintech_4Tier_Partnership_Master.xlsx",
+        "fintech_collabs_cache.json"
+      ]
+    },
+    {
+      "id": "audit_profile",
+      "name": "Live Instagram Profile & Follower Verification",
+      "description": "Performs exact follower count audit, bio extraction, contact details, verification badge, and creator tier assignment via Playwright and curl_cffi.",
+      "triggers": [
+        "audit profile",
+        "check followers",
+        "verify creator",
+        "get profile metrics",
+        "resolve handle",
+        "profile check",
+        "how many followers does"
+      ],
+      "script": "core/profile_auditor.py",
+      "args_schema": {
+        "handle": "str (e.g. @rjpraveen or rjpraveen)"
+      },
+      "deliverables": [
+        "Console output / JSON profile object"
+      ]
+    },
+    {
+      "id": "detect_boost_ad_spend",
+      "name": "Paid Media Ad Spend & Boost Detection",
+      "description": "Analyzes a reel or post for paid media boost indicators (outlier view-to-follower multiplier, sub-0.35% like rate, play count discrepancies).",
+      "triggers": [
+        "detect boost",
+        "is this reel boosted",
+        "check ad spend",
+        "paid media detection",
+        "boost status",
+        "boost reason"
+      ],
+      "script": "core/ad_boost_engine.py",
+      "args_schema": {
+        "url_or_shortcode": "str"
+      },
+      "deliverables": [
+        "Console diagnostic / JSON with is_boosted, boost_status, boost_reason"
+      ]
+    },
+    {
+      "id": "list_workbooks",
+      "name": "List Master Workbooks & Datasets",
+      "description": "Lists all available finalized Excel workbooks, summary CSVs, and data caches in the repository with row counts and file sizes.",
+      "triggers": [
+        "list workbooks",
+        "show excel files",
+        "what datasets exist",
+        "list master files",
+        "show deliverables",
+        "list reports"
+      ],
+      "script": "run.py",
+      "action": "list_workbooks"
+    },
+    {
+      "id": "competitor_jewellery_electronics",
+      "name": "Competitor Intelligence (Jewellery, Electronics, Footwear)",
+      "description": "Executes brand-specific omnichannel competitor research across GRT, Oriana, Palmonas, Giva, Croma, or Skechers.",
+      "triggers": [
+        "croma competitor",
+        "palmonas analysis",
+        "grt jewellers analysis",
+        "oriana benchmark",
+        "footwear analysis",
+        "jewellery brands scan"
+      ],
+      "script": "competitor/scripts/run_competitor_analysis.py",
+      "deliverables": [
+        "jewellery_brands_consolidated_analysis.xlsx",
+        "croma_electronics_master_analysis.xlsx",
+        "footwear_sneaker_brands_master_analysis.xlsx"
+      ]
+    },
+    {
+      "id": "hyperlocal_malls",
+      "name": "Hyperlocal Malls & Real Estate Footfall Intelligence",
+      "description": "Analyzes Pune, Hyderabad, and Bangalore retail malls, tenant directories, customer sentiment, and Google Maps Popular Times busyness.",
+      "triggers": [
+        "mall analysis",
+        "pune hyderabad malls",
+        "lakeshore kopa",
+        "inorbit mall footfall",
+        "phoenix marketcity reviews"
+      ],
+      "script": "build_malls_master_excel.py",
+      "deliverables": [
+        "pune_hyderabad_malls_master_analysis.xlsx",
+        "Lake_Shore_Media_Buyer_Intelligence_Engine.xlsx"
+      ]
+    }
+  ]
+}
