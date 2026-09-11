@@ -32,6 +32,37 @@ InstagramAnalytics/
 
 ---
 
+## 🗄️ The Permanent Creator Store — start here
+
+`creator_intelligence.db` is the source of record for every creator, region, campaign and brand
+collaborator ever discovered. **Query it before starting any new discovery run** — the first
+backfill recovered 9,193 distinct handles that were already scattered across this repo's rosters
+and workbooks with no way to search them.
+
+Read **[CREATOR_DB.md](../docs/CREATOR_DB.md)** for the schema, worked client briefs and SQL recipes.
+
+| File | Role |
+|---|---|
+| `creator_intelligence.db` | SQLite store. Git-ignored: it holds creators' emails and phone numbers |
+| `core/creator_db.py` | Schema, writes, query API, natural-language ask, raw SQL, workbook export |
+| `core/regional_engine.py` | `harvest` (cheap, wide) → `audit` (exact, ranked, resumable) → `deliver` (query + workbook), plus `backfill` |
+| `core/discovery_sources.py` | Region, category and campaign definitions; all seven free harvesters |
+| `core/profile_auditor.py` | The exact follower-count ladder |
+
+```bash
+python core/regional_engine.py backfill
+python core/regional_engine.py harvest --region punjab --pages 6
+python core/regional_engine.py audit   --region punjab --limit 400
+python core/regional_engine.py deliver --region punjab --residence 2 --min 10000 --xlsx out.xlsx
+python core/creator_db.py ask "kolkata food creators above 50k with email"
+python run.py "give me kolkata food creators above 50k with email"
+```
+
+Regions configured: kolkata, punjab, hyderabad, chennai, mumbai, delhi, bangalore.
+Campaigns: durga_puja_2025, durga_puja_2026, diwali_2025.
+
+---
+
 ## 🎯 The Core Business Verticals
 
 ### 1. Kolkata & Bengal Creator Ecosystem
@@ -41,7 +72,9 @@ InstagramAnalytics/
   - `bengal_kolkata_chef_creators_deep_scan_master.xlsx`: 21 verified culinary icons with cross-platform (IG, YT, FB) audience sizing.
   - `kolkata_durga_pujo_1000_regional_creators_master.xlsx`: High-volume Durga Puja campaign roster.
 * **Key Scripts**:
-  - `core/kolkata_engine.py`: Multi-source discovery (hashtags, hubs, brand collabs, live Playwright audit).
+  - `core/kolkata_engine.py` (v4.0): Seven-source discovery with corroboration ranking and exact provenance-stamped auditing. `--categories=`, `--sources=`, `--hops=`, `--llm-csv=`, `--reaudit`.
+  - `core/discovery_sources.py`: The free candidate harvesters — Instagram's chaining (similar-accounts) graph, LLM citation ingest from `quvoid/LLMxCitations`, free vendor directory pages, region x category topsearch grid, geotagged location sections, hashtag sections, and seed health checks. Region and category vocabularies live here, so adding a category extends every source at once.
+  - `core/profile_auditor.py` (v2.0): The exact-count resolution ladder (`users/{pk}/info` JSON, then the rendered DOM `span[title]`, then rounded `og:description` as a labelled fallback), plus engagement rate. See AGENTS.md rules 1a and 1b.
   - `build_kolkata_creator_network_engine.py`: Google Trends validation and regional graph modeling.
   - `deep_scan_kolkata_creators.py`: Deep profile auditing with reel view sampling.
 
@@ -127,12 +160,11 @@ The canonical active cookie parameters are stored in:
 - `core/kolkata_engine.py`
 
 ```python
-COOKIES = {
-    "sessionid": "25113411270%3AyQFaao428g6Xb9%3A0%3AAYjwS_M5UIDcS-i41tvdVFu8WKSqfzfgEhlZLGMvFg",
-    "csrftoken": "3gJbkGDZp99lA8QQ0brobyoHzOreuu8f",
-    "mid": "afyCbwALAAFRStE-k17-dfO5_jfa",
-    "ds_user_id": "25113411270",
-}
+# Never hardcode these. They live in the git-ignored .env and are loaded by
+# core/session.py. See .env.example for the variable names.
+from core.session import load_cookies, playwright_cookies
+COOKIES = load_cookies()                      # dict for curl_cffi / requests
+PLAYWRIGHT_COOKIES = playwright_cookies(COOKIES)   # list for context.add_cookies()
 ```
 
 ---

@@ -13,3 +13,22 @@ scratch_*.json
 batch*.json
 chunk_*.json
 half*.json
+
+# Creator intelligence store: holds thousands of creators' emails and phone
+# numbers scraped from public profiles. Personal data - do not publish to a
+# remote. Rebuildable from scratch with: regional_engine.py backfill + harvest.
+creator_intelligence.db
+creator_intelligence.db-wal
+creator_intelligence.db-shm
+candidates_*.json
+harvest_*_report.json
+backfill_report.json
+discovery_run_report.json
+profile_audit_cache.json
+llm_profiles/
+llm_discovery_answers.json
+
+# Page audit: raw scrape cache and superseded output
+page_audit_cache.json
+Page_Momentum_Audit_v1_BUGGY_BACKUP.xlsx
+llm_discovery_prompts.csv

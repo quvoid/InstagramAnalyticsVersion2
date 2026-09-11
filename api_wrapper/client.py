@@ -1,12 +1,6 @@
 """
 Unified Competitor Intelligence & Creator Audit Engine
-With Named Date Range Support:
-  - '7d' / '1w'  (Last 1 Week)
-  - '30d' / '1m' (Last 1 Month)
-  - '90d' / '3m' (Last 3 Months)
-  - '180d' / '6m' (Last 6 Months)
-  - '365d' / '1y' (Last 1 Year)
-  - '730d' / '2y' (Last 2 Years)
+Sequential Multi-Stage Pipeline with Exact Robust Extraction Logic.
 """
 
 import sys, os, json, time, re, csv
@@ -21,11 +15,9 @@ from playwright.sync_api import sync_playwright
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-DEFAULT_IG_COOKIES = {
-    "sessionid": "76326162386%3A670U47iQkU6B8V%3A18%3AAYj9oJ1L51k_G3_j-uX4lQ9V6aM9Wc7gQ2yZ",
-    "ds_user_id": "76326162386",
-    "csrftoken": "b3U8nI5m6d9L0v7e8W1x2y",
-}
+# Live session cookies come from the git-ignored .env via core/session.py
+from core.session import load_cookies as _load_ig_cookies
+DEFAULT_IG_COOKIES = _load_ig_cookies()
 
 DEFAULT_IG_HEADERS = {
     "User-Agent": "Instagram 269.0.0.18.75 Android (26/8.0.0; 480dpi; 1080x1920; OnePlus; ONEPLUS A3003; OnePlus3; qcom; en_US; 314665256)",
@@ -33,27 +25,10 @@ DEFAULT_IG_HEADERS = {
 }
 
 
-# ==============================================================================
-# DATE RANGE RESOLVER HELPER
-# ==============================================================================
 def parse_date_range(time_window: Union[int, str, None]) -> int:
-    """
-    Parses flexible date range strings or integers into exact number of days.
-    Examples:
-      '7d', '1w', '1week'   -> 7 days
-      '30d', '1m', '1month' -> 30 days
-      '90d', '3m', '3months'-> 90 days
-      '180d', '6m', '6months'-> 180 days
-      '365d', '1y', '1year' -> 365 days
-      '730d', '2y', '2years'-> 730 days
-      180                   -> 180 days
-    """
     if time_window is None: return 365
     if isinstance(time_window, int): return max(1, time_window)
-    
     s = str(time_window).lower().strip().replace(" ", "").replace("_", "").replace("-", "")
-    
-    # Direct mappings
     mappings = {
         "7d": 7, "1w": 7, "1week": 7, "week": 7, "lastweek": 7,
         "14d": 14, "2w": 14, "2weeks": 14,
@@ -64,23 +39,16 @@ def parse_date_range(time_window: Union[int, str, None]) -> int:
         "365d": 365, "1y": 365, "1year": 365, "year": 365, "lastyear": 365, "last1year": 365,
         "730d": 730, "2y": 730, "2years": 730, "last2years": 730
     }
-    if s in mappings:
-        return mappings[s]
-        
+    if s in mappings: return mappings[s]
     if s.endswith("d") and s[:-1].isdigit(): return int(s[:-1])
     if s.endswith("w") and s[:-1].isdigit(): return int(s[:-1]) * 7
     if s.endswith("m") and s[:-1].isdigit(): return int(s[:-1]) * 30
     if s.endswith("y") and s[:-1].isdigit(): return int(s[:-1]) * 365
     if s.isdigit(): return int(s)
-    
     return 365
 
 
-# ==============================================================================
-# 1. PROFILE ENRICHMENT HELPER (CONCURRENT)
-# ==============================================================================
 def resolve_creator_profile(raw_handle: str) -> Dict[str, Any]:
-    """Resolves live follower count, full name, and audience scale tier."""
     clean_h = raw_handle.lower().replace("@", "").strip()
     s = cffi_requests.Session(impersonate="chrome120")
     followers = 0
@@ -121,8 +89,6 @@ def resolve_creator_profile(raw_handle: str) -> Dict[str, Any]:
 # 2. INSTAGRAM SERVICE
 # ==============================================================================
 class InstagramService:
-    """Extracts Grid, Reels, Co-Authors, and Boost Ranks across any Date Range."""
-
     def __init__(self, cookies: Optional[Dict[str, str]] = None, headers: Optional[Dict[str, str]] = None):
         self.cookies = cookies or DEFAULT_IG_COOKIES
         self.headers = headers or DEFAULT_IG_HEADERS
@@ -141,59 +107,80 @@ class InstagramService:
     def get_profile(self, username: str) -> Dict[str, Any]:
         return resolve_creator_profile(username)
 
-    def get_partnerships(self, target_brand: str, time_window: Union[int, str] = "1y", max_pages: int = 30) -> Dict[str, Any]:
-        """
-        Extract all co-authored reels, lookbooks, and creator collabs across:
-        '7d' / '1w', '30d' / '1m', '90d' / '3m', '180d' / '6m', '365d' / '1y', '730d' / '2y'.
-        """
+    def get_partnerships(self, target_brand: str, time_window: Union[int, str] = "1y", max_pages: int = 35) -> Dict[str, Any]:
         days_back = parse_date_range(time_window)
         clean_u = target_brand.lower().replace("@", "").strip()
         user_pk = self.resolve_pk(clean_u)
         session = self._get_session()
         cutoff_ts = int((datetime.now(timezone.utc) - timedelta(days=days_back)).timestamp())
 
-        all_media = []
-        seen_ids = set()
+        internal_accounts = {
+            clean_u, f"{clean_u}_men", f"{clean_u}_official", f"{clean_u}_silver", f"{clean_u}.me",
+            "palmonas", "palmonas_men", "palmonas_official", "palmonas_silver", "palmonas.me"
+        }
 
-        for endpoint_name, base_url in [
-            ("Timeline Feed", f"https://i.instagram.com/api/v1/feed/user/{user_pk}/"),
-            ("Reels/Clips", "https://i.instagram.com/api/v1/clips/user/")
-        ]:
-            max_id = ""
-            for page in range(1, max_pages + 1):
-                try:
-                    if endpoint_name == "Timeline Feed":
-                        url = f"{base_url}?count=12"
-                        if max_id: url += f"&max_id={max_id}"
-                        r = session.get(url, headers=self.headers, cookies=self.cookies, timeout=12)
-                    else:
-                        body_data = {"target_user_id": str(user_pk), "page_size": "12"}
-                        if max_id: body_data["max_id"] = max_id
-                        r = session.post(base_url, headers=self.headers, cookies=self.cookies, data=body_data, timeout=12)
-
-                    if r.status_code != 200: break
+        feed_items = []
+        max_id = ""
+        # 1. Timeline Feed
+        for p in range(1, max_pages + 1):
+            f_url = f"https://i.instagram.com/api/v1/feed/user/{user_pk}/"
+            if max_id: f_url += f"?max_id={max_id}"
+            try:
+                r = session.get(f_url, headers=self.headers, cookies=self.cookies, timeout=12)
+                if r.status_code == 200:
                     data = r.json()
                     items = data.get("items", [])
-                    raw_list = [it.get("media", it) if "media" in it else it for it in items]
+                    feed_items.extend(items)
+                    max_id = data.get("next_max_id")
 
-                    for it in raw_list:
-                        pk = str(it.get("pk") or it.get("id"))
-                        if pk and pk not in seen_ids:
-                            seen_ids.add(pk)
-                            all_media.append(it)
-
-                    unpinned = [it.get("taken_at", 0) for it in raw_list if not it.get("timeline_pinned_user_ids") and it.get("taken_at")]
-                    oldest_ts = min(unpinned, default=0)
-                    if oldest_ts and oldest_ts < cutoff_ts:
+                    unpinned_ts = [it.get("taken_at", 0) for idx, it in enumerate(items) if not (p == 1 and idx < 3)]
+                    oldest_ts = min(unpinned_ts) if unpinned_ts else (items[-1].get("taken_at", 0) if items else 0)
+                    if p > 1 and oldest_ts and oldest_ts < cutoff_ts:
                         break
-
-                    max_id = data.get("next_max_id") or data.get("paging_info", {}).get("max_id")
-                    if not max_id or not items: break
+                    if not max_id or len(items) == 0:
+                        break
                     time.sleep(0.35)
-                except Exception:
-                    break
+                else: break
+            except Exception:
+                break
 
-        # Process Collaborations & Cohorts
+        # 2. Clips / Reels Feed
+        clips_items = []
+        max_id = ""
+        for p in range(1, max_pages + 1):
+            c_url = "https://i.instagram.com/api/v1/clips/user/"
+            payload = {"target_user_id": str(user_pk), "page_size": 30}
+            if max_id: payload["max_id"] = str(max_id)
+            try:
+                r = session.post(c_url, headers=self.headers, data=payload, cookies=self.cookies, timeout=12)
+                if r.status_code == 200:
+                    data = r.json()
+                    clips = [it.get("media") for it in data.get("items", []) if it.get("media")]
+                    clips_items.extend(clips)
+                    paging = data.get("paging_info", {})
+                    max_id = paging.get("max_id")
+
+                    unpinned_ts = [it.get("taken_at", 0) for idx, it in enumerate(clips) if not (p == 1 and idx < 3)]
+                    oldest_ts = min(unpinned_ts) if unpinned_ts else (clips[-1].get("taken_at", 0) if clips else 0)
+                    if p > 1 and oldest_ts and oldest_ts < cutoff_ts:
+                        break
+                    if not paging.get("more_available") or not max_id:
+                        break
+                    time.sleep(0.35)
+                else: break
+            except Exception:
+                break
+
+        # Deduplicate
+        seen_pks = set()
+        all_raw_posts = []
+        for it in feed_items + clips_items:
+            pk = str(it.get("pk") or it.get("id"))
+            if pk and pk not in seen_pks:
+                seen_pks.add(pk)
+                all_raw_posts.append(it)
+
+        # Process Collaborations
         now_ts = int(datetime.now(timezone.utc).timestamp())
         ts_7d = now_ts - (7 * 86400)
         ts_30d = now_ts - (30 * 86400)
@@ -204,30 +191,26 @@ class InstagramService:
         creators_dict = {}
         cohort_counts = {"last_7d": 0, "last_30d": 0, "last_90d": 0, "last_180d": 0, "total_in_window": 0}
 
-        for it in all_media:
+        for it in all_raw_posts:
             taken_at = it.get("taken_at", 0)
-            if taken_at < cutoff_ts: continue
+            if not taken_at or taken_at < cutoff_ts: continue
 
-            owner = it.get("user", {})
-            owner_uname = owner.get("username", "").lower()
-            coauthors = it.get("coauthor_producers", [])
+            owner = it.get("user", {}).get("username", "").lower()
+            coauthors = [c.get("username", "").lower() for c in it.get("coauthor_producers", [])]
             is_paid = bool(it.get("is_paid_partnership", False))
+            code = it.get("code") or ""
+            post_url = f"https://www.instagram.com/p/{code}/" if code else ""
 
-            is_collab = False
-            creator_uname = ""
-
-            if owner_uname and owner_uname != clean_u and not owner_uname.startswith(clean_u[:5]):
-                is_collab = True
-                creator_uname = owner_uname
+            creator_handle = ""
+            if owner != clean_u:
+                if owner not in internal_accounts:
+                    creator_handle = f"@{owner}"
             elif coauthors:
-                for c in coauthors:
-                    cu = c.get("username", "").lower()
-                    if cu != clean_u and not cu.startswith(clean_u[:5]):
-                        is_collab = True
-                        creator_uname = cu
-                        break
+                ext = [c for c in coauthors if c not in internal_accounts and c != clean_u]
+                if ext: creator_handle = f"@{ext[0]}"
 
-            if is_collab and creator_uname:
+            if creator_handle:
+                creator_raw = creator_handle.replace("@", "").strip()
                 cohort_counts["total_in_window"] += 1
                 if taken_at >= ts_7d: cohort_counts["last_7d"] += 1
                 if taken_at >= ts_30d: cohort_counts["last_30d"] += 1
@@ -245,13 +228,12 @@ class InstagramService:
                 elif not is_paid and is_boosted: tier = "Tier 3: Toggle OFF + Heavily Boosted Ad"
                 else: tier = "Tier 4: Toggle OFF + Organic / Noise"
 
-                code = it.get("code", "")
                 date_str = datetime.fromtimestamp(taken_at, tz=timezone.utc).strftime("%Y-%m-%d")
 
-                collab_obj = {
-                    "post_url": f"https://www.instagram.com/p/{code}/" if code else "",
-                    "creator_handle": f"@{creator_uname}",
-                    "raw_handle": creator_uname,
+                collabs.append({
+                    "post_url": post_url,
+                    "creator_handle": creator_handle,
+                    "raw_handle": creator_raw,
                     "date": date_str,
                     "timestamp": taken_at,
                     "views": views,
@@ -261,29 +243,28 @@ class InstagramService:
                     "is_paid_toggle": is_paid,
                     "is_boosted": is_boosted,
                     "partnership_tier": tier
-                }
-                collabs.append(collab_obj)
+                })
 
-                if creator_uname not in creators_dict:
-                    creators_dict[creator_uname] = {
-                        "handle": f"@{creator_uname}",
-                        "raw_handle": creator_uname,
+                if creator_raw not in creators_dict:
+                    creators_dict[creator_raw] = {
+                        "handle": creator_handle,
+                        "raw_handle": creator_raw,
                         "total_posts": 1,
                         "total_views": views,
                         "total_likes": likes,
                         "latest_post_date": date_str
                     }
                 else:
-                    creators_dict[creator_uname]["total_posts"] += 1
-                    creators_dict[creator_uname]["total_views"] += views
-                    creators_dict[creator_uname]["total_likes"] += likes
+                    creators_dict[creator_raw]["total_posts"] += 1
+                    creators_dict[creator_raw]["total_views"] += views
+                    creators_dict[creator_raw]["total_likes"] += likes
 
         return {
             "brand": clean_u,
             "time_window_requested": str(time_window),
             "days_audited": days_back,
             "date_range_cohorts": cohort_counts,
-            "total_media_scanned": len(all_media),
+            "total_media_scanned": len(all_raw_posts),
             "total_collab_posts": len(collabs),
             "unique_creators_count": len(creators_dict),
             "creators": list(creators_dict.values()),
@@ -295,8 +276,6 @@ class InstagramService:
 # 3. FACEBOOK SERVICE
 # ==============================================================================
 class FacebookService:
-    """Handles Facebook Page Metrics, Followers & Delegate Page IDs."""
-
     def __init__(self):
         self.session = cffi_requests.Session(impersonate="chrome120")
 
@@ -323,14 +302,12 @@ class FacebookService:
 # 4. META AD LIBRARY SERVICE
 # ==============================================================================
 class MetaAdLibraryService:
-    """Extracts Ad Cards, Whitelisted Creator Handles, and Run Dates."""
-
     def search_ads(self, query: str, page_id: Optional[str] = None, active_only: bool = False, max_scrolls: int = 35) -> Dict[str, Any]:
         status_param = "active" if active_only else "all"
-        if page_id:
-            url = f"https://www.facebook.com/ads/library/?active_status={status_param}&ad_type=all&country=IN&view_all_page_id={page_id}&search_type=page&media_type=all"
-        else:
-            url = f"https://www.facebook.com/ads/library/?active_status={status_param}&ad_type=all&country=IN&q={query}&search_type=keyword_unordered&media_type=all"
+        clean_q = query.split("_")[0].strip()  # e.g. "palmonas_official" -> "palmonas"
+        
+        # Keyword search on Meta Ad Library yields 100% full ads
+        url = f"https://www.facebook.com/ads/library/?active_status={status_param}&ad_type=all&country=IN&q={clean_q}&search_type=keyword_unordered&media_type=all"
 
         all_ads = []
         seen_ids = set()
@@ -408,7 +385,7 @@ class MetaAdLibraryService:
 
         # Identify Creators
         creators = {}
-        clean_b = query.lower().replace(" ", "").replace("_", "")
+        clean_b = clean_q.lower().replace(" ", "").replace("_", "")
 
         for ad in all_ads:
             adv = ad["advertiser"]
@@ -451,7 +428,7 @@ class MetaAdLibraryService:
                         creators[ckey]["active_ads"] += 1
 
         return {
-            "query": query,
+            "query": clean_q,
             "page_id": page_id,
             "total_ads_captured": len(all_ads),
             "unique_creators_count": len(creators),
@@ -461,14 +438,9 @@ class MetaAdLibraryService:
 
 
 # ==============================================================================
-# 5. MASTER COMPETITOR INTELLIGENCE CLIENT (END-TO-END PIPELINE)
+# 5. MASTER COMPETITOR INTELLIGENCE CLIENT
 # ==============================================================================
 class CompetitorIntelligenceClient:
-    """
-    Unified Orchestrator:
-    Supports flexible Date Ranges: '1w', '1m', '3m', '6m', '1y', '2y'
-    """
-
     def __init__(self, ig_cookies: Optional[Dict[str, str]] = None):
         self.instagram = InstagramService(cookies=ig_cookies)
         self.facebook = FacebookService()
@@ -481,16 +453,12 @@ class CompetitorIntelligenceClient:
         print(f"🚀 EXECUTING 360° COMPETITOR AUDIT FOR: @{clean_b.upper()} [Window: {time_window} ({days_back} Days)]")
         print("="*80 + "\n")
 
-        # ----------------------------------------------------------------------
-        # STEP 1: Scrape Instagram Brand Grid & Reels
-        # ----------------------------------------------------------------------
+        # 1. Instagram Grid Scrape
         print(f"📌 [STEP 1/5] Scraping Instagram Grid & Reels for @{clean_b} ({days_back} Days)...")
         ig_data = self.instagram.get_partnerships(clean_b, time_window=days_back)
         print(f"   ✓ Captured {ig_data['total_collab_posts']} Collab Posts across {ig_data['unique_creators_count']} Creators\n")
 
-        # ----------------------------------------------------------------------
-        # STEP 2: Enrich Instagram Creator Profiles
-        # ----------------------------------------------------------------------
+        # 2. Enrich Instagram Creator Profiles
         print(f"📌 [STEP 2/5] Enriching Profile Metrics for {len(ig_data['creators'])} Instagram Creators...")
         ig_profiles_map = {}
         with ThreadPoolExecutor(max_workers=10) as ex:
@@ -501,16 +469,12 @@ class CompetitorIntelligenceClient:
 
         print(f"   ✓ Successfully resolved follower counts & tiers for all {len(ig_profiles_map)} creators\n")
 
-        # ----------------------------------------------------------------------
-        # STEP 3: Scrape Meta Ad Library
-        # ----------------------------------------------------------------------
-        print(f"📌 [STEP 3/5] Scraping Meta Ad Library for '{clean_b}' (Page ID: {fb_page_id})...")
+        # 3. Meta Ad Library Scrape
+        print(f"📌 [STEP 3/5] Scraping Meta Ad Library for '{clean_b}'...")
         ad_data = self.ad_library.search_ads(query=clean_b, page_id=fb_page_id, max_scrolls=30)
         print(f"   ✓ Captured {ad_data['total_ads_captured']} Ads | {ad_data['unique_creators_count']} Whitelisted Partners\n")
 
-        # ----------------------------------------------------------------------
-        # STEP 4: Enrich Meta Ad Library Creators
-        # ----------------------------------------------------------------------
+        # 4. Enrich Meta Ad Library Creators
         print(f"📌 [STEP 4/5] Enriching Metrics for Meta Ad Library Creator Partners...")
         meta_profiles_map = {}
         missing_from_ig = [mc["handle"].replace("@", "").strip() for mc in ad_data["creators"] if mc["handle"].replace("@", "").strip() not in ig_profiles_map]
@@ -523,13 +487,11 @@ class CompetitorIntelligenceClient:
 
         print(f"   ✓ Resolved metrics for {len(meta_profiles_map)} Dark Whitelist Creators\n")
 
-        # ----------------------------------------------------------------------
-        # STEP 5: Data Fusion & Entity Deduplication
-        # ----------------------------------------------------------------------
+        # 5. Data Fusion & Entity Deduplication
         print(f"📌 [STEP 5/5] Fusing & Deduplicating Cross-Platform Datasets...")
         unified_master = {}
 
-        # 1. Ingest Instagram Creators
+        # Load IG Creators
         for c in ig_data["creators"]:
             h = c["raw_handle"]
             prof = ig_profiles_map.get(h, {})
@@ -550,7 +512,7 @@ class CompetitorIntelligenceClient:
                 "sample_ad_url": ""
             }
 
-        # 2. Merge Meta Ad Library Creators
+        # Merge Meta Ad Library Creators
         for mc in ad_data["creators"]:
             h = mc["handle"].replace("@", "").lower().replace(" ", "").replace("_", "").replace(".", "")
             matched_h = None

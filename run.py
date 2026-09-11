@@ -84,6 +84,21 @@ def parse_intent(query: str, registry: Dict[str, Any]) -> Optional[Dict[str, Any
     if any(k in q for k in ["show catalog", "view catalog", "what is this repo", "help", "menu"]):
         return {"id": "show_catalog"}
 
+    # Reading the permanent store is the DEFAULT. A question about creators must
+    # never launch a scrape by accident - trigger-word scoring used to route
+    # "give me kolkata food creators" into a full discovery run, which burns rate
+    # limit to answer something the database already knew.
+    WRITE_WORDS = ("harvest", "audit", "discover", "discovery", "scrape", "scan",
+                   "backfill", "crawl", "refresh", "find new", "expand")
+    READ_WORDS = ("give me", "show me", "who are", "which ", "list creators",
+                  "how many", "with email", "query", "ask ", "from the db",
+                  "from db", "database", "we have", "do we have", "already",
+                  "pull ", "export", "deliver")
+    if any(w in q for w in READ_WORDS) and not any(w in q for w in WRITE_WORDS):
+        for intent in registry.get("intents", []):
+            if intent.get("id") == "creator_db_query":
+                return intent
+
     # Match against registry triggers
     best_intent = None
     max_matches = 0
@@ -151,7 +166,13 @@ def execute_query(query: str):
         print(f"Handle:    {res['handle']}")
         print(f"Name:      {res.get('full_name', '')}")
         print(f"Followers: {res.get('followers', 0):,} ({format_followers(res.get('followers', 0))})")
+        # A count is only meaningful alongside how exact it is and when it was read.
+        print(f"Precision: {str(res.get('followers_precision', 'unknown')).upper()} "
+              f"via {res.get('followers_source', 'unknown')} at {res.get('resolved_at', '')}")
         print(f"Tier:      {res.get('tier', '')}")
+        print(f"Category:  {res.get('ig_category') or 'N/A'}")
+        print(f"Email:     {res.get('email', 'N/A')}")
+        print(f"Status:    {res.get('status', '')}")
         print(f"URL:       {res.get('profile_url', '')}")
         print("=" * 50)
         return
@@ -190,6 +211,63 @@ def execute_query(query: str):
         is_dry = "dry" in query.lower()
         print(f"[*] Launching FinTech 4-Tier 2-Year Scan (dry_run={is_dry})...")
         run_fintech_scan(dry_run=is_dry)
+        return
+
+    # 5. Creator database - natural language straight onto the permanent store
+    if intent_id == "creator_db_query":
+        from core import creator_db as cdb
+        conn = cdb.connect()
+        filters = cdb.parse_nl_query(query, conn)
+        limit = filters.pop("limit", 100)
+        print(f"[*] Querying creator_intelligence.db")
+        print(f"    filters: {json.dumps(filters, ensure_ascii=False)}")
+        rows = cdb.query_creators(conn, limit=limit, **filters)
+        print(f"    matches: {len(rows)}\n")
+        if rows:
+            cdb._print_rows(rows)
+        else:
+            s = cdb.stats(conn)
+            print("    No exact-count matches yet. The store currently holds "
+                  f"{s['creators_total']:,} creators, {s['creators_pending_audit']:,} "
+                  "of them still awaiting an exact audit.")
+            print("    Run:  python core/regional_engine.py audit --limit 400")
+        conn.close()
+        return
+
+    # 6. Regional harvest / audit / deliver
+    if intent_id == "regional_creator_harvest":
+        from core import regional_engine as rge
+        from core.discovery_sources import REGIONS, CAMPAIGNS
+        q = query.lower()
+        region = next((r for r in REGIONS if r in q), None)
+        campaign = next((c for c in CAMPAIGNS
+                         if c in q or c.replace("_", " ") in q), None)
+        if not campaign and re.search(r'\b(pujo|durga pu[jz][oa])\b', q):
+            campaign = "durga_puja_2025"
+
+        if "backfill" in q:
+            rge.backfill(region_default=region or "kolkata")
+        elif "audit" in q:
+            nums = [int(s) for s in re.findall(r'\b\d+\b', q)]
+            rge.audit_pending(region=region, limit=(nums[0] if nums else 300),
+                              verify_campaign=campaign)
+        elif "harvest" in q:
+            if not region:
+                print(f"[!] Which region? known: {', '.join(REGIONS)}")
+                return
+            rge.harvest(region=region, campaign=campaign)
+        else:
+            if not region:
+                print(f"[!] Which region? known: {', '.join(REGIONS)}")
+                return
+            print(f"[*] Delivering from the permanent store (region={region}, "
+                  f"campaign={campaign or 'none'})")
+            f = {"region": region, "min_followers": 10000}
+            if campaign:
+                f["campaign"] = campaign
+            if re.search(r'\b(lives?|living|based|resident)\b', q):
+                f["min_distinct_places"] = 2
+            rge.deliver(**f)
         return
 
     # Fallback to executing the script directly

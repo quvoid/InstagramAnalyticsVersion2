@@ -14,6 +14,77 @@ An enterprise-grade Python SDK, REST API (FastAPI), and CLI engine to scrape Ins
 
 ---
 
+## Setup — credentials
+
+Instagram scraping needs a logged-in session. **Cookies are never hardcoded** — they live in a
+git-ignored `.env` and are loaded by `core/session.py`:
+
+```bash
+cp .env.example .env
+# fill in from a logged-in browser: DevTools -> Application -> Cookies -> instagram.com
+```
+
+```
+IG_SESSIONID=...
+IG_CSRFTOKEN=...
+IG_DS_USER_ID=...
+IG_MID=...
+```
+
+A `sessionid` is a full login — anyone holding it is logged in as that account with no password
+or 2FA. If one ever leaks, log the account out of all sessions in Instagram's security settings;
+that invalidates it wherever it was copied.
+
+---
+
+## Creator intelligence — the permanent store and the momentum audit
+
+Two newer layers sit on top of the partnership engine. Both are documented in `docs/`.
+
+### `docs/CREATOR_DB.md` — the permanent creator store
+`creator_intelligence.db` is the source of record for every creator, region, campaign and brand
+collaborator ever discovered. A client brief becomes a query, not a new scrape.
+
+```bash
+python core/regional_engine.py backfill                              # once: recovers every roster already in the repo
+python core/regional_engine.py harvest --region punjab --pages 6     # cheap, wide discovery
+python core/regional_engine.py audit   --region punjab --limit 400   # exact follower counts, ranked, resumable
+python core/regional_engine.py deliver --region punjab --residence 2 --min 10000 --xlsx out.xlsx
+python core/creator_db.py ask "kolkata food creators above 50k with email"
+```
+
+| Module | Role |
+|---|---|
+| `core/session.py` | Loads credentials from `.env`. The only place they come from. |
+| `core/profile_auditor.py` | Exact follower-count ladder with provenance (`exact` / `rounded` / `unresolved`) |
+| `core/discovery_sources.py` | Seven free harvesters: Instagram's chaining graph, geo sections, hashtags, topsearch, YouTube, directory pages, LLM answers |
+| `core/creator_db.py` | SQLite schema, writes, query API, natural-language `ask`, workbook export |
+| `core/regional_engine.py` | `harvest` → `audit` → `deliver` orchestration, any region / category / campaign |
+| `core/llm_discovery.py` | Asks ChatGPT / duck.ai / Perplexity / Gemini for creators, resolves the *names* via Instagram search |
+| `core/kolkata_engine.py` | The original Kolkata pipeline, rewired onto the above |
+
+### `docs/PAGE_AUDIT.md` — page momentum audit
+Judges a list of pages on **current traction, not follower count**: exact views, likes,
+comments and dates on the latest posts, then an Invest / Don't Invest call ranked against
+peers in the same group.
+
+```bash
+python page_audit.py --input page_audit_input.txt --output Page_Momentum_Audit.xlsx --pause 1.0
+python page_audit.py --input mylist.txt --output MyList.xlsx --excel-only     # rebuild from cache
+```
+
+Input is a text file of handles under `## Tab Name` headers. The cache is shared across lists, so
+a page audited once is never re-fetched. Output is one consolidated sheet with the tab carried as a
+column, plain text, no colours, no emojis.
+
+Rules the audit enforces, because the output goes to decision-makers:
+- **hidden like counts are reported as hidden**, never as the placeholder `3` Instagram returns
+- **pinned posts are excluded** from every metric
+- **views and likes are joined on the post code**, so they always describe the same posts
+- engagement is measured **per view** (the honest denominator for reels) as well as per follower
+
+---
+
 ## 📑 Table of Contents
 - [✨ Core Capabilities](#-core-capabilities)
 - [🏛️ The 4-Tier Collaboration Hierarchy](#️-the-4-tier-collaboration-hierarchy)
