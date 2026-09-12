@@ -67,7 +67,11 @@ InstagramAnalytics/
 │   ├── docs/                                 # Sector-specific documentation and research notes
 │   ├── scripts/                              # Sector analysis scripts (Croma, Jewellery, Footwear)
 │   └── workbooks/                            # Final sector-specific Excel workbooks
-└── [Master Workbooks & Datasets in Root]     # 80+ Deliverable Excel files and JSON caches
+├── deliverables/                             # Every client workbook and CSV
+├── data/                                     # Tracked JSON datasets and caches
+├── docs/                                     # CREATOR_DB.md, PAGE_AUDIT.md, guides, prompts
+├── .claude/skills/                           # ig-competitor-intelligence, ig-creator-intelligence, ig-partnership-timeline
+└── scripts/legacy/                           # One-off scripts from past work (run from repo root)
 ```
 
 ---

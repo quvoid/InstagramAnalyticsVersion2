@@ -49,7 +49,7 @@ from core.profile_auditor import (
 
 INPUT_FILE = os.path.join(BASE_DIR, "page_audit_input.txt")
 CACHE_FILE = os.path.join(BASE_DIR, "page_audit_cache.json")   # shared across lists
-EXCEL_FILE = os.path.join(BASE_DIR, "Page_Momentum_Audit.xlsx")
+EXCEL_FILE = os.path.join(BASE_DIR, "deliverables", "Page_Momentum_Audit.xlsx")
 
 POSTS_DOC_ID = "38154989454116081"   # PolarisProfilePostsQuery
 REELS_DOC_ID = "37945290971781723"   # PolarisProfileReelsTabContentQuery
@@ -803,7 +803,9 @@ if __name__ == "__main__":
     if "--input" in args:
         INPUT_FILE = os.path.join(BASE_DIR, args[args.index("--input") + 1])
     if "--output" in args:
-        EXCEL_FILE = os.path.join(BASE_DIR, args[args.index("--output") + 1])
+        _o = args[args.index("--output") + 1]
+        # bare filename -> deliverables/, a path is used as given
+        EXCEL_FILE = _o if os.sep in _o or "/" in _o else os.path.join(BASE_DIR, "deliverables", _o)
     if "--excel-only" in args:
         build_excel(load_cache(), per_tab="--per-tab" in args)
         sys.exit(0)

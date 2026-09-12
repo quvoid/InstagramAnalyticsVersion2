@@ -27,7 +27,11 @@ InstagramAnalytics/
 │   ├── docs/
 │   ├── scripts/
 │   └── workbooks/
-└── [Root Datasets & Master Workbooks]        # 📊 Master Deliverable Excel Files & JSON Caches
+├── deliverables/                             # 📊 Every client workbook and CSV
+├── data/                                     # 🗂️ Tracked JSON datasets and caches
+├── docs/                                     # 📖 Guides, prompts, CREATOR_DB.md, PAGE_AUDIT.md
+├── .claude/skills/                           # 🧩 Agent skills
+└── scripts/legacy/                           # 🗄️ One-off scripts from past client work
 ```
 
 ---

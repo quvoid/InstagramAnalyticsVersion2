@@ -40,7 +40,8 @@ def list_master_workbooks():
     print("=" * 80)
     print("MASTER EXCEL WORKBOOKS & DELIVERABLES")
     print("=" * 80)
-    xlsx_files = glob.glob(os.path.join(BASE_DIR, "*.xlsx"))
+    xlsx_files = (glob.glob(os.path.join(BASE_DIR, "deliverables", "*.xlsx"))
+                  + glob.glob(os.path.join(BASE_DIR, "*.xlsx")))
     if not xlsx_files:
         print("No .xlsx files found in root.")
         return

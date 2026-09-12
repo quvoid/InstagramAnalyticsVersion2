@@ -14,6 +14,43 @@ An enterprise-grade Python SDK, REST API (FastAPI), and CLI engine to scrape Ins
 
 ---
 
+## Repository layout
+
+```
+InstagramAnalytics/
+├── README.md · AGENTS.md · PROJECT_CONTEXT.md    start here
+├── run.py                 natural-language dispatcher      python run.py "audit profile @handle"
+├── page_audit.py          page momentum audit              python page_audit.py --input list.txt --output out.xlsx
+├── app.py                 Streamlit UI
+├── .env.example           copy to .env and fill in the Instagram session (never committed)
+│
+├── core/                  the engines - session, exact auditing, discovery, creator DB, page audit logic
+├── api_wrapper/           Python SDK + CLI (partnership scans, profile metrics)
+├── api/                   FastAPI: Instagram partnerships + profile metrics        port 8000
+├── fb_api/                FastAPI: Facebook pages + Meta Ad Library (GraphQL)      port 8001
+├── catalog/               REGISTRY.json (intent -> script) · MASTER_DIRECTORY.md (asset index)
+├── docs/                  CREATOR_DB.md · PAGE_AUDIT.md · API and architecture guides · agent prompts
+├── .claude/skills/        ig-competitor-intelligence · ig-creator-intelligence · ig-partnership-timeline
+│
+├── competitor/            sector benchmarks (malls, jewellery, electronics, footwear): data · docs · scripts · workbooks
+├── deliverables/          every client workbook and CSV produced so far
+├── data/                  tracked JSON datasets and caches feeding the deliverables
+└── scripts/legacy/        one-off scrapers and builders from past client work (run from the repo root)
+```
+
+Local working files (`creator_intelligence.db`, `page_audit_cache.json`, `scratch_*.json`,
+`.env`) are git-ignored and stay at the root.
+
+## Skills (for Claude Code and other agents)
+
+| Skill | Use it for |
+|---|---|
+| `ig-competitor-intelligence` | which creators a brand works with, 4-tier classification, live Meta Ad Library ads, competitor benchmarks |
+| `ig-creator-intelligence` | finding and verifying creators for a region / category / campaign, the creator database, page momentum audits |
+| `ig-partnership-timeline` | adding "when did the collab go live" to an existing creator sheet |
+
+---
+
 ## Setup — credentials
 
 Instagram scraping needs a logged-in session. **Cookies are never hardcoded** — they live in a

@@ -73,7 +73,7 @@ from core.discovery_sources import (
 
 DISCOVERY_OUTPUT_FILE = os.path.join(BASE_DIR, "discovery_verified_creators.json")
 CANDIDATES_CACHE_FILE = os.path.join(BASE_DIR, "discovery_candidates_pool.json")
-EXCEL_OUTPUT_FILE = os.path.join(BASE_DIR, "kolkata_creators_master_discovery.xlsx")
+EXCEL_OUTPUT_FILE = os.path.join(BASE_DIR, "deliverables", "kolkata_creators_master_discovery.xlsx")
 RUN_REPORT_FILE = os.path.join(BASE_DIR, "discovery_run_report.json")
 
 # Community hubs used as BFS entry points. Health-checked at the start of every
@@ -152,8 +152,9 @@ def load_all_existing_handles() -> Set[str]:
         "discovery_verified_creators.json",
     ]
     for fn in files:
-        fp = os.path.join(BASE_DIR, fn)
-        if not os.path.exists(fp):
+        fp = next((p for p in (os.path.join(BASE_DIR, fn), os.path.join(BASE_DIR, "data", fn))
+                   if os.path.exists(p)), None)
+        if not fp:
             continue
         try:
             with open(fp, "r", encoding="utf-8") as f:

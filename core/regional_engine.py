@@ -591,9 +591,17 @@ def backfill(region_default: str = "kolkata", include_xlsx: bool = True,
     print("=" * 76)
     print("BACKFILL - existing rosters into creator_intelligence.db")
     print("=" * 76)
+    # Rosters may sit at the root (local working files) or under data/ (tracked).
+    def _find(fn: str) -> Optional[str]:
+        for d in (BASE_DIR, os.path.join(BASE_DIR, "data")):
+            fp = os.path.join(d, fn)
+            if os.path.exists(fp):
+                return fp
+        return None
+
     for fn, reg in json_targets:
-        fp = os.path.join(BASE_DIR, fn)
-        if not os.path.exists(fp):
+        fp = _find(fn)
+        if not fp:
             continue
         n = 0
         try:
@@ -626,7 +634,9 @@ def backfill(region_default: str = "kolkata", include_xlsx: bool = True,
 
     if include_xlsx:
         import openpyxl
-        for fp in sorted(glob.glob(os.path.join(BASE_DIR, "*.xlsx"))):
+        xlsx_paths = (glob.glob(os.path.join(BASE_DIR, "*.xlsx"))
+                      + glob.glob(os.path.join(BASE_DIR, "deliverables", "*.xlsx")))
+        for fp in sorted(xlsx_paths):
             fn = os.path.basename(fp)
             if fn.startswith("~$"):
                 continue
