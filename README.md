@@ -43,11 +43,55 @@ Local working files (`creator_intelligence.db`, `page_audit_cache.json`, `scratc
 
 ## Skills (for Claude Code and other agents)
 
-| Skill | Use it for |
+Skills live in `.claude/skills/<name>/SKILL.md`. **You don't need to name them** — Claude Code
+reads each skill's description and picks the right one automatically from what you ask (e.g.
+just say "who does Nykaa collab with" and `ig-competitor-intelligence` loads itself). You *can*
+name one explicitly if you want to be sure which playbook it follows: say "use the
+ig-creator-intelligence skill" or, if your agent supports slash commands, `/ig-creator-intelligence`.
+
+### `ig-competitor-intelligence` — a brand's creators and its live paid ads
+Say things like: *"who does @brand collab with"*, *"scan these 5 competitor brands"*, *"4-tier
+this brand's partnerships"*, *"what is @brand running as Meta ads right now"*.
+
+| It does | How |
 |---|---|
-| `ig-competitor-intelligence` | which creators a brand works with, 4-tier classification, live Meta Ad Library ads, competitor benchmarks |
-| `ig-creator-intelligence` | finding and verifying creators for a region / category / campaign, the creator database, page momentum audits |
-| `ig-partnership-timeline` | adding "when did the collab go live" to an existing creator sheet |
+| Finds every creator a brand has organically collaborated with | Method A — scans the brand's own feed for co-authored posts, tagged partners, `#ad` captions |
+| Classifies each collab's seriousness | The 4-tier taxonomy (paid-toggle × boosted-or-organic) |
+| Tiers each creator by audience size | exact live follower count → Mega/Macro/Mid-Tier/Micro/Nano |
+| Flags boosted (paid-media) reels | view-to-follower multiplier + like-rate thresholds |
+| Pulls the brand's **live** Meta Ad Library ads | Method B — `fb_api`, exact counts, not the scroll-limited web UI |
+| Separates creator ads from plain brand ads | reads Meta's `branded_content` field, not string-matching |
+| Exports a client-ready workbook | one sheet per brand, zero emojis, zero colour fills |
+
+### `ig-creator-intelligence` — find, verify and rank creators; judge page momentum
+Say things like: *"give me kolkata food creators above 50k with email"*, *"find creators in
+punjab"*, *"which creators did durga puja"*, *"deep scan these kolkata creators"*, *"is this list
+of pages worth investing in"*.
+
+| It does | How |
+|---|---|
+| Answers from what's already known, before scraping anything new | `creator_db.py ask "<question>"` — natural language over the permanent store |
+| Discovers new creators for a region / category / festival | `regional_engine.py harvest` → `audit` → `deliver` |
+| Resolves **exact**, live follower counts (never the rounded "12M") | the resolution ladder in `core/profile_auditor.py` |
+| Proves a creator actually lives in a region | geotagged posts at 2+ real places, not a bio keyword |
+| Confirms festival participation with the actual post as proof | `--campaign durga_puja_2025`, verified per creator |
+| **90-day deep scan**: every brand partnership, with proof | `creator_deep_scan.py` — paid-toggle, sponsor tags, co-authors, `#ad` hashtags, tagged businesses |
+| Pulls exact engagement metrics and posting cadence | median views/likes/comments over the scan window |
+| Classifies what kind of content a creator makes | scored against a category keyword set |
+| Finds a business email to reach them | profile business-email field, else bio |
+| Asks a chatbot for creator leads, safely | `llm_discovery.py` — resolves the *names* it gives through Instagram search, never trusts a stated handle |
+| Ranks a list of pages Invest / Don't Invest on current traction | `page_audit.py` — exact views/likes/comments, peer-ranked within each tab |
+| Exports a client workbook | one query away — `deliver --xlsx out.xlsx` |
+
+### `ig-partnership-timeline` — "when did this creator's collab go live"
+Say things like: *"add a partnership timeline to this creator sheet"*, *"when did @creator's
+collab with @brand post"*.
+
+| It does | How |
+|---|---|
+| Enriches an existing creator spreadsheet with collab dates | reads the sheet, resolves each username, scans their feed |
+| Finds the exact post URL and caption for each collab | Method A (organic feed scan) |
+| Cross-checks for paid ads the organic scan missed | Method B (Meta Ad Library) |
 
 ---
 
@@ -99,6 +143,25 @@ python core/creator_db.py ask "kolkata food creators above 50k with email"
 | `core/regional_engine.py` | `harvest` → `audit` → `deliver` orchestration, any region / category / campaign |
 | `core/llm_discovery.py` | Asks ChatGPT / duck.ai / Perplexity / Gemini for creators, resolves the *names* via Instagram search |
 | `core/kolkata_engine.py` | The original Kolkata pipeline, rewired onto the above |
+
+### `core/creator_deep_scan.py` — 90 days of a verified creator's own posts
+For every brand-side question that comes after "who are the creators": what have they actually
+posted lately, who have they partnered with, and how do we reach them.
+
+```bash
+python core/regional_engine.py deepscan   --region kolkata --limit 400 --days 90
+python core/regional_engine.py deepexport --region kolkata --xlsx Kolkata_Deep.xlsx
+python core/creator_deep_scan.py one @handle          # a single creator, printed as JSON
+```
+
+Walks back 90 days of a creator's own posts (pinned posts excluded) and records, per creator:
+every partnership post and the brand behind it (Meta's paid-partnership toggle, a sponsor tag, a
+co-authored post, an `#ad`-style hashtag, or a tagged business account — resolved and cached, so
+a café tagged by 50 food creators costs one lookup, not 50), median likes / comments / exact reel
+views over the window, engagement per view, posting cadence, a content category scored from every
+caption, and a business email where the profile exposes one. Everything lands in
+`creator_intelligence.db` (`creator_deep_scan`, `tagged_accounts`, `brand_collabs`) so it's a
+query afterwards, not a re-scrape.
 
 ### `docs/PAGE_AUDIT.md` — page momentum audit
 Judges a list of pages on **current traction, not follower count**: exact views, likes,

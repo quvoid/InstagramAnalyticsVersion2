@@ -83,6 +83,25 @@ newest-first and would need thousands of pages to reach last year.
 the feed endpoint, which Instagram throttles first; it reports
 unavailability rather than guessing.
 
+**Deep research on verified creators** — 90 days of their own posts:
+
+```bash
+python core/regional_engine.py deepscan   --region kolkata --limit 400 --days 90
+python core/regional_engine.py deepexport --region kolkata --xlsx Kolkata_Creators_Deep_Research.xlsx
+python core/creator_deep_scan.py one @handle
+```
+
+Per creator it walks back 90 days (pinned posts excluded so an old trophy
+cannot end the walk), and records: every partnership post and the brand
+behind it (paid toggle, sponsor tag, co-author, #ad hashtag, or a tagged
+business account — tagged accounts are resolved once and cached, a tagged
+friend is not a partnership), median likes / comments / exact reel views,
+engagement per view, posting cadence, content category scored over every
+caption, and the email (business email, else bio). Measured on one Kolkata
+food creator: 53 posts, 45 distinct brands in 90 days, 0 with the paid
+toggle on. `scripts/run_kolkata_deep.py` chains harvest → audit → deepscan
+→ export for a whole region, resumable.
+
 **Competitor's collaborators** (Visa strategy) — already scanned, now a query:
 `deliver --brand <competitor> --min 10000`, or `--exclude-brand` for who the
 competitor has *not* used.

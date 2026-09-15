@@ -116,15 +116,57 @@ def looks_like_retailer(username: str, full_name: str = "") -> bool:
 REGIONS: Dict[str, Dict[str, Any]] = {
     "kolkata": {
         "label": "Kolkata & West Bengal",
-        "place_queries": ["kolkata", "howrah", "salt lake", "new town kolkata",
-                          "park street kolkata", "gariahat"],
+        # Every neighbourhood, landmark and district a Kolkata creator might tag.
+        # A creator who posts from two or more of these is treated as resident.
+        "place_queries": [
+            # city-wide
+            "kolkata", "calcutta", "kolkata west bengal",
+            # south
+            "park street kolkata", "gariahat", "ballygunge", "bhowanipore", "alipore",
+            "new alipore", "tollygunge", "jadavpur", "garia", "behala", "kalighat", "hazra",
+            "chetla", "rashbehari avenue", "southern avenue", "golpark", "kasba", "santoshpur",
+            "park circus", "topsia", "tangra", "taratala", "joka", "thakurpukur", "narendrapur",
+            "sonarpur", "baruipur",
+            # central
+            "esplanade kolkata", "dalhousie kolkata", "chowringhee", "college street kolkata",
+            "sealdah", "entally", "beleghata", "phoolbagan", "kankurgachi", "ultadanga",
+            "maniktala", "bowbazar",
+            # north
+            "shyambazar", "bagbazar", "kumartuli", "sovabazar", "hatibagan", "dum dum",
+            "lake town kolkata", "baguiati", "kestopur", "belgharia", "barrackpore",
+            "barasat", "madhyamgram", "dakshineswar", "sinthee",
+            # east / new town
+            "salt lake city kolkata", "sector 5 salt lake", "new town kolkata", "rajarhat",
+            "eco park kolkata", "city centre salt lake", "action area newtown",
+            # howrah and hooghly
+            "howrah", "shibpur", "howrah bridge", "belur math", "serampore", "chandannagar",
+            "uttarpara", "konnagar", "chinsurah",
+            # landmarks and venues
+            "victoria memorial", "eden gardens", "prinsep ghat", "maidan kolkata",
+            "science city kolkata", "nicco park", "south city mall", "quest mall",
+            "acropolis mall", "mani square", "forum mall kolkata", "axis mall",
+            "netaji subhash chandra bose international airport", "howrah station",
+            "sealdah station", "kalighat temple", "birla planetarium", "indian museum",
+            "jorasanko thakur bari", "st pauls cathedral kolkata", "millennium park kolkata",
+            "nandan kolkata", "rabindra sadan", "salt lake stadium", "princep ghat",
+            "new market kolkata", "flurys", "peter cat", "mocambo", "arsalan", "kookie jar",
+            # west bengal districts
+            "hooghly", "north 24 parganas", "south 24 parganas", "nadia", "krishnanagar",
+            "murshidabad", "berhampore", "bardhaman", "durgapur", "asansol", "siliguri",
+            "darjeeling", "kalimpong", "jalpaiguri", "cooch behar", "malda", "kharagpur",
+            "medinipur", "haldia", "digha", "mandarmani", "bankura", "purulia", "birbhum",
+            "bolpur", "santiniketan", "tarapith", "bishnupur", "diamond harbour", "sundarbans",
+        ],
         "authenticity_keywords": [
             'kolkata', 'calcutta', 'bengal', 'bengali', 'bong', 'pujo', 'durga puja',
             'rannaghar', 'adda', 'bangla', 'tollygunge', 'howrah', 'salt lake',
             'new town', 'rabindra', 'ghat', 'hooghly', 'tollywood', 'south kolkata',
             'north kolkata', 'park street', 'gariahat', 'new market', 'jadavpur',
             'city of joy', 'west bengal', 'mishti', 'durga', 'behala', 'ballygunge',
-            'bhowanipore', 'kalighat', 'shantiniketan', 'digha', 'darjeeling',
+            'bhowanipore', 'kalighat', 'shantiniketan', 'digha', 'darjeeling', 'siliguri',
+            'durgapur', 'asansol', 'kharagpur', 'barasat', 'barrackpore', 'dum dum',
+            'rajarhat', 'garia', 'sonarpur', 'serampore', 'chandannagar', 'malda',
+            'murshidabad', 'nadia', 'bankura', 'purulia', 'sundarban',
         ],
         "search_tokens": ["kolkata", "calcutta", "bengali", "bengal", "bong"],
         "language_hints": ["bengali", "bangla"],

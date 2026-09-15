@@ -212,7 +212,12 @@
         "mumbai creators",
         "delhi creators",
         "bangalore creators",
-        "creators who did durga pujo"
+        "creators who did durga pujo",
+        "deep scan creators",
+        "creators partnerships last 3 months",
+        "which brands did creators work with",
+        "creator email and metrics",
+        "kolkata deep research"
       ],
       "script": "core/regional_engine.py",
       "outputs": [
@@ -223,7 +228,10 @@
         "harvest --region R --campaign C --pages N --places N --sources ...",
         "audit --region R --limit N --verify-campaign C --engagement",
         "deliver --region R --campaign C --residence N --min N --xlsx OUT",
-        "backfill"
+        "backfill",
+        "deepscan --region R --limit N --days 90",
+        "deepexport --region R --xlsx OUT",
+        "scripts/run_kolkata_deep.py  (full chained pipeline)"
       ],
       "docs": "docs/CREATOR_DB.md"
     },

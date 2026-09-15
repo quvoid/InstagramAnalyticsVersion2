@@ -92,7 +92,7 @@ def harvest(region: str,
             campaign: Optional[str] = None,
             sources: Optional[List[str]] = None,
             pages: int = 5,
-            max_places: int = 14,
+            max_places: int = 500,
             chaining_hops: int = 2,
             min_likes: int = 0,
             llm_csv: Optional[str] = None,
@@ -121,12 +121,20 @@ def harvest(region: str,
 
     # ---- S4 GEO SWEEP: volume plus residence evidence ----------------------
     if "geo" in sources:
-        print(f"\n[S4 GEO] resolving places for {region}")
+        conn.execute("CREATE TABLE IF NOT EXISTS swept_locations (place_pk TEXT PRIMARY KEY, "
+                     "place_name TEXT, region TEXT, pages INTEGER, authors INTEGER, swept_at TEXT)")
+        conn.commit()
+        already = {r[0] for r in conn.execute(
+            "SELECT place_pk FROM swept_locations WHERE region=? AND pages>=?", (region, pages))}
+        print(f"\n[S4 GEO] resolving places for {region} "
+              f"({len(cfg['place_queries'])} place queries)")
         places = region_place_ids(region)
-        print(f"         {len(places)} places resolved, sweeping up to {max_places}")
+        todo = [p for p in places if p["pk"] not in already][:max_places]
+        print(f"         {len(places)} places resolved, {len(already)} already swept at this "
+              f"depth, sweeping {len(todo)}")
         leads = obs = 0
-        for i, p in enumerate(places[:max_places], 1):
-            print(f"  [{i}/{min(len(places), max_places)}] {p['name'][:46]:46s}", flush=True)
+        for i, p in enumerate(todo, 1):
+            print(f"  [{i}/{len(todo)}] {p['name'][:46]:46s}", flush=True)
             res = location_sweep(p["pk"], pages=pages, min_likes=min_likes,
                                  on_progress=print)
             if res["status"] != "ok":
@@ -139,12 +147,15 @@ def harvest(region: str,
                 cdb.add_geo_evidence(conn, o["username"], region, p["pk"], p["name"],
                                      o["taken_at"], o["like_count"])
                 obs += 1
+            conn.execute("INSERT OR REPLACE INTO swept_locations VALUES (?,?,?,?,?,?)",
+                         (p["pk"], p["name"][:120], region, res["pages_read"],
+                          res["distinct_authors"], now_iso()))
             conn.commit()
             leads += res["distinct_authors"]
             print(f"        {res['distinct_authors']} distinct authors over "
                   f"{res['pages_read']} pages (exhausted={res['exhausted']})")
             time.sleep(2)
-        report["sources"]["geo"] = {"places_swept": min(len(places), max_places),
+        report["sources"]["geo"] = {"places_swept": len(todo), "already_swept": len(already),
                                     "author_hits": leads, "geo_observations": obs}
 
     # ---- S5 HASHTAG SWEEP: campaign proof when a window is given -----------
@@ -563,6 +574,26 @@ def deliver(xlsx: Optional[str] = None, json_out: Optional[str] = None,
 # ==============================================================================
 HANDLE_COL_HINTS = ["username", "handle", "instagram", "creator", "profile", "account"]
 
+# A backfilled file only gets a region tag when its name says so. Tagging every
+# old workbook with the default region once labelled 1,800 celebrity ambassadors
+# from jewellery and electronics clients as Kolkata creators.
+REGION_FILE_HINTS = {
+    "kolkata": re.compile(r'kolkata|bengal|pujo|durga|bong', re.I),
+    "punjab": re.compile(r'punjab|chandigarh|amritsar|ludhiana', re.I),
+    "hyderabad": re.compile(r'hyderabad|telangana', re.I),
+    "chennai": re.compile(r'chennai|madras|tamil', re.I),
+    "mumbai": re.compile(r'mumbai|bombay|maharashtra', re.I),
+    "delhi": re.compile(r'delhi|gurgaon|gurugram|noida|ncr', re.I),
+    "bangalore": re.compile(r'bangalore|bengaluru|karnataka', re.I),
+}
+
+
+def _region_for_file(fn: str, default: str) -> str:
+    for reg, rx in REGION_FILE_HINTS.items():
+        if rx.search(fn):
+            return reg
+    return ""
+
 
 def backfill(region_default: str = "kolkata", include_xlsx: bool = True,
              audit_after: bool = False) -> Dict[str, Any]:
@@ -617,12 +648,13 @@ def backfill(region_default: str = "kolkata", include_xlsx: bool = True,
                     continue
                 # A row that already carries provenance was resolved by the exact
                 # ladder - keep it as a real creator instead of demoting it to a lead.
+                file_reg = _region_for_file(fn, reg)
                 if isinstance(item, dict) and item.get("followers_precision") in ("exact", "rounded"):
                     item.setdefault("raw_handle", h)
                     cdb.upsert_creator(conn, item)
-                    cdb.add_observation(conn, h, "manual", fn, reg)
+                    cdb.add_observation(conn, h, "manual", fn, file_reg)
                 else:
-                    cdb.add_candidate_only(conn, h, "manual", detail=fn, region=reg)
+                    cdb.add_candidate_only(conn, h, "manual", detail=fn, region=file_reg)
                 n += 1
             conn.commit()
         except Exception as e:
@@ -665,7 +697,7 @@ def backfill(region_default: str = "kolkata", include_xlsx: bool = True,
                     h = clean_handle(row[idx])
                     if h:
                         cdb.add_candidate_only(conn, h, "manual", detail=fn,
-                                               region=region_default)
+                                               region=_region_for_file(fn, region_default))
                         found += 1
             wb.close()
             if found:
@@ -742,6 +774,10 @@ def _parse(args: List[str]) -> Dict[str, Any]:
             o["json_out"] = nxt; i += 2
         elif a == "--brief":
             o["brief"] = nxt; i += 2
+        elif a == "--days":
+            o["days"] = int(nxt); i += 2
+        elif a == "--pause":
+            o["pause"] = float(nxt); i += 2
         elif a == "--require-geo":
             o["require_geo"] = int(nxt); i += 2
         elif a == "--verify-campaign":
@@ -778,6 +814,8 @@ def _cli():
         print("  deliver [--region R] [--campaign C] [--residence N] [--min N] [--max N]")
         print("          [--category C] [--brand B] [--has-email] [--verified] [--xlsx OUT]")
         print("  backfill [--region R] [--no-xlsx-backfill]")
+        print("  deepscan [--region R] [--limit N] [--days 90]   90-day partnerships, metrics, category, email")
+        print("  deepexport --region R --xlsx OUT.xlsx")
         print(f"\nRegions: {', '.join(REGIONS)}")
         print(f"Campaigns: {', '.join(CAMPAIGNS)}")
         print(f"Categories: {', '.join(CATEGORIES)}")
@@ -804,6 +842,13 @@ def _cli():
     elif cmd == "backfill":
         backfill(region_default=opts.get("region", "kolkata"),
                  include_xlsx=opts.get("include_xlsx", True))
+    elif cmd == "deepscan":
+        from core.creator_deep_scan import run as deep_run
+        deep_run(opts.get("region"), limit=opts.get("limit", 200),
+                 days=opts.get("days", 90), pause=opts.get("pause", 1.5))
+    elif cmd == "deepexport":
+        from core.creator_deep_scan import export as deep_export
+        deep_export(opts.get("region"), opts.get("xlsx", "Creator_Deep_Scan.xlsx"))
     else:
         raise SystemExit(f"unknown command: {cmd}")
 
